@@ -41,3 +41,6 @@ Thumbs.db
 .cursor/rules/codacy.mdc
 # MCP local config (chứa API key — không commit)
 .cursor/mcp.json
+
+# --- Codacy CLI (tùy chọn cục bộ, không cần trong repo) ---
+.codacy/
