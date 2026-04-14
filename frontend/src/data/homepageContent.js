@@ -1,7 +1,10 @@
-/** Ảnh mẫu (hình 5 / link bạn gửi) — lưu cục bộ trong `public/images/landing/` */
-const HERO_IMAGE_SRC = '/images/landing/hero-mockup.jpg';
-const WHY_IMAGE_CITY = '/images/landing/why-city.jpg';
-const WHY_IMAGE_PAGODA = '/images/landing/why-pagoda.jpg';
+/** Ảnh mẫu theo link bạn cung cấp */
+const HERO_IMAGE_SRC =
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDLA_MHEzHCfY-5kJAe4FDu1hRrb1cV8NHy0Feg9-6lZRIuJ_BKNddEexbfLE4jLLSFx6X9wVv3oCoGH_WSyhiEAsixgZSbC2y6CcZdEaGw7YmAMT_cMLrHmrFJg88D8-k_HkZy3GxOCO_x84qngV-kvX7toI4QLvOLRtJjsRX33AXnJF_bCPRpxdskgpSn28L3bxC8YsnaxlBIOZx-QjyuT79Avq0u6IR0SniXpbuMVnU5qzJyocL5e7aWgN0vEhzOnp3VAj_51HM';
+const WHY_IMAGE_CITY =
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuCYa70aIBMvItlNHTnzM7sykqn5DQDjN0OrK-nh3fcXoJZOQxuugTujAt6FlueOa_ikoTu02l_n5Rk1yk1jKk9pWAaanGXIjKvLI1vOPWAFBturyFynMXqEjXI-qLAuLnSMelKj6PDBXBGF5Zpit0U414HeBjhGwxNb_V0LBLJBQmXOYeUXZ8oFywUDa58_hWTJpDjQIKvhpRL2PlYebo3wgW7IeuFIxefNuz2py5dDBpm3TIEUpYD-uPFtfo8qxpKEBq5a1d0asP8';
+const WHY_IMAGE_PAGODA =
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDMdUJlcoHNdBGtmPJDJkJwMGaYgG06zDCDOiiWiCsMMLoKrqb3rf8TAEuQ1KciyyzEFd_A_22hoYrdvQ8RcU3BitbKELLG4Fq-2AuX4BLA-SJOtKHdnyVNfYIs94x6IcEqQh99md9PESE_lyiDsZ_3MlxLXaSzFugWqxuqJMiaNdCefVeo3SUdWnC7u0dl_smiJXNjnqIroIGqdvAMfhjTuc1M1cWpfaduwnEuC99ZK1gEu7ivoydFt5i0ktOWjgViitAhjQs185c';
 
 export const HOMEPAGE_HERO = {
   badge: 'Chinh phục tiếng Nhật từ hôm nay',
@@ -71,9 +74,9 @@ export const HOMEPAGE_TESTIMONIALS = {
   items: [
     {
       name: 'Minh Anh',
-      level: 'Học viên N2',
+      level: 'Học viên N5',
       quote:
-        'Phương pháp học qua trò chơi khiến mình duy trì thói quen đều hơn. Kanji dễ nhớ hơn rất nhiều.',
+        'Lộ trình N5 rất dễ theo dõi, mỗi ngày mình học một ít nhưng vẫn thấy tiến bộ đều.',
     },
     {
       name: 'Hoàng Nam',
@@ -85,7 +88,7 @@ export const HOMEPAGE_TESTIMONIALS = {
       name: 'Thu Thảo',
       level: 'Học viên N4',
       quote:
-        'Giao diện dễ dùng, bài học mạch lạc và có nhiều hoạt động tương tác nên học không bị chán.',
+        'Nội dung N4 được sắp theo tuần rất rõ ràng, học xong là mình ôn lại được ngay.',
     },
   ],
 };

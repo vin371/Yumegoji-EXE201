@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { authService } from '../../../services/authService';
+import { adminService } from '../../../services/adminService';
 import { moderationService } from '../../../services/moderationService';
 
 const ROLES = [
@@ -48,12 +49,6 @@ function normalizeUser(row) {
   return { id, username, email, role, isLocked, levelId, isPremium, exp, xu, isEmailVerified, createdAt };
 }
 
-const MOCK_ACTIVITY = [
-  { t: 'Đăng nhập', at: 'Hôm nay 08:12' },
-  { t: 'Hoàn thành bài: Chào hỏi N5', at: 'Hôm qua' },
-  { t: 'Chơi game từ vựng', at: '2 ngày trước' },
-];
-
 function RoleBadge({ role }) {
   const r = String(role).toLowerCase();
   if (r === 'admin') return <span className="admin-users__role admin-users__role--admin">Admin</span>;
@@ -75,8 +70,11 @@ export function UsersTab() {
   const [filterLevel, setFilterLevel] = useState(''); // '', '1','2','3','none'
   const [pendingReports, setPendingReports] = useState(null);
   const [detailUser, setDetailUser] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
   const [warnings, setWarnings] = useState([]);
   const [warnLoading, setWarnLoading] = useState(false);
+  const [overview, setOverview] = useState(null);
 
   const myId = authService.getEffectiveUserId();
 
@@ -97,6 +95,13 @@ export function UsersTab() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    adminService
+      .getOverview()
+      .then((data) => setOverview(data))
+      .catch(() => setOverview(null));
+  }, [users.length]);
 
   useEffect(() => {
     moderationService
@@ -148,10 +153,12 @@ export function UsersTab() {
     });
   }, [users, query, filterRole, filterLock, filterPremium, filterLevel]);
 
-  const activeCount = users.filter((u) => !u.isLocked).length;
-  const premiumCount = users.filter((u) => u.isPremium).length;
-  const d7 = Date.now() - 7 * 86400000;
-  const newCount = users.filter((u) => u.createdAt && u.createdAt.getTime() >= d7).length;
+  const activeCount = Number(overview?.activeUsers ?? overview?.ActiveUsers ?? users.filter((u) => !u.isLocked).length);
+  const premiumCount = Number(overview?.premiumUsers ?? overview?.PremiumUsers ?? users.filter((u) => u.isPremium).length);
+  const newCount = Number(
+    overview?.newUsersLast7Days ?? overview?.NewUsersLast7Days ?? users.filter((u) => u.createdAt && u.createdAt.getTime() >= Date.now() - 7 * 86400000).length
+  );
+  const academyUsers = Number(overview?.academyUsers ?? overview?.AcademyUsers ?? users.filter((u) => u.role === 'user').length);
 
   async function toggleLock(u) {
     if (u.id === myId) return;
@@ -217,6 +224,20 @@ export function UsersTab() {
     }
   }
 
+  async function openDetail(u) {
+    setDetailError('');
+    setDetailLoading(true);
+    setDetailUser(u);
+    try {
+      const latest = await authService.getUserById(u.id);
+      if (latest) setDetailUser(normalizeUser(latest));
+    } catch (e) {
+      setDetailError(formatApiError(e, 'Không tải được chi tiết người dùng, đang hiển thị dữ liệu hiện có.'));
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
   return (
     <div className="admin-users">
       <div className="admin-users__stats">
@@ -225,8 +246,8 @@ export function UsersTab() {
             ◎
           </span>
           <div>
-            <div className="admin-users__stat-value">{users.length}</div>
-            <div className="admin-users__stat-label">Tổng tài khoản</div>
+            <div className="admin-users__stat-value">{academyUsers}</div>
+            <div className="admin-users__stat-label">Tài khoản học viện</div>
           </div>
         </div>
         <div className="admin-users__stat">
@@ -272,7 +293,7 @@ export function UsersTab() {
           <div>
             <h3 className="admin-users__panel-title">Quản lý người dùng</h3>
             <p className="admin-users__panel-sub">
-              Tìm kiếm, lọc theo vai trò / khóa / Premium / cấp độ. Chi tiết hồ sơ, hoạt động (mẫu), cảnh cáo từ API.
+              Tìm kiếm, lọc theo vai trò / khóa / Premium / cấp độ. Chi tiết hồ sơ và cảnh cáo đều lấy trực tiếp từ API.
             </p>
           </div>
           <div className="admin-users__toolbar">
@@ -392,7 +413,7 @@ export function UsersTab() {
                           <span className="admin-users__self-note">Không thể tự chỉnh sửa</span>
                         ) : (
                           <div className="admin-users__actions">
-                            <button type="button" className="admin-users__action" disabled={busyId === u.id} onClick={() => setDetailUser(u)}>
+                            <button type="button" className="admin-users__action" disabled={busyId === u.id} onClick={() => void openDetail(u)}>
                               Chi tiết
                             </button>
                             <button
@@ -463,13 +484,16 @@ export function UsersTab() {
               Email: {detailUser.email} · Premium: {detailUser.isPremium ? 'Có' : 'Không'} · EXP {detailUser.exp} · Xu {detailUser.xu} · Email xác minh:{' '}
               {detailUser.isEmailVerified ? 'Có' : 'Chưa'}
             </p>
-            <h5 style={{ margin: '1rem 0 0.35rem', fontSize: '0.85rem' }}>Hoạt động gần đây (mẫu)</h5>
+            {detailLoading ? <p className="admin-dash__card-sub">Đang đồng bộ chi tiết từ API…</p> : null}
+            {detailError ? <p className="admin-users__alert">{detailError}</p> : null}
+            <h5 style={{ margin: '1rem 0 0.35rem', fontSize: '0.85rem' }}>Thông tin tài khoản (API)</h5>
             <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
-              {MOCK_ACTIVITY.map((a) => (
-                <li key={a.t}>
-                  {a.t} — {a.at}
-                </li>
-              ))}
+              <li>Trạng thái: {detailUser.isLocked ? 'Đã khóa' : 'Hoạt động'}</li>
+              <li>Vai trò: {detailUser.role}</li>
+              <li>Cấp độ: {detailUser.levelId != null ? LEVEL_BY_ID[detailUser.levelId] || `Lv.${detailUser.levelId}` : 'Chưa gán'}</li>
+              <li>Tài khoản Premium: {detailUser.isPremium ? 'Có' : 'Không'}</li>
+              <li>Ngày tạo: {detailUser.createdAt ? detailUser.createdAt.toLocaleString('vi-VN') : 'Chưa có dữ liệu'}</li>
+              <li>Email xác minh: {detailUser.isEmailVerified ? 'Có' : 'Chưa'}</li>
             </ul>
             <h5 style={{ margin: '1rem 0 0.35rem', fontSize: '0.85rem' }}>Lịch sử cảnh cáo (API)</h5>
             {warnLoading ? <p className="admin-dash__card-sub">Đang tải…</p> : null}

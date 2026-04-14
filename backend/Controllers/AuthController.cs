@@ -98,6 +98,12 @@ public class AuthController : ControllerBase
             return Forbid();
         }
 
+        // Non-admin chỉ được cập nhật hồ sơ cơ bản của chính mình.
+        if (!isAdmin && (request.Role != null || request.LevelId.HasValue || request.IsLocked.HasValue || request.IsPremium.HasValue))
+        {
+            return Forbid();
+        }
+
         var updated = await _authService.UpdateUserAsync(id, request);
         if (updated == null) return NotFound();
 

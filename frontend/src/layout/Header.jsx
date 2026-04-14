@@ -19,8 +19,9 @@ export function Header() {
   if (isMarketing) {
     return (
       <header className="layout-header layout-header--marketing">
-        <Link to={ROUTES.HOME} className="layout-header__brand" aria-label="Sakura Nihongo — về trang chủ">
-          <span className="layout-header__brand-text">Sakura Nihongo</span>
+        <Link to={ROUTES.HOME} className="layout-header__brand" aria-label="YumeGo-ji — về trang chủ">
+          <img src={yumeLogo} alt="YumeGo-ji" className="layout-header__brand-logo" />
+          <span className="layout-header__brand-title">YumeGo-ji</span>
         </Link>
 
         <nav className="layout-header__nav-center" aria-label="Điều hướng chính">
@@ -69,6 +70,7 @@ export function Header() {
     <header className="layout-header">
       <Link to={ROUTES.HOME} className="layout-header__logo" aria-label="YumeGo-ji — về trang chủ">
         <img src={yumeLogo} alt="YumeGo-ji" className="layout-header__logo-img" />
+        <span className="layout-header__logo-title">YumeGo-ji</span>
       </Link>
       <nav className="layout-header__nav">
         <button

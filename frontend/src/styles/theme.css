@@ -210,6 +210,7 @@ body {
 .layout-header__logo {
   display: inline-flex;
   align-items: center;
+  gap: 0.6rem;
   text-decoration: none;
 }
 .layout-header__logo:hover {
@@ -251,6 +252,12 @@ body {
   width: auto;
   display: block;
   border-radius: 0;
+}
+.layout-header__logo-title {
+  font-weight: 800;
+  color: #bd0039;
+  letter-spacing: -0.02em;
+  font-size: 1.02rem;
 }
 .layout-header__nav {
   display: flex;
@@ -311,6 +318,19 @@ html[data-theme='dark'] .layout-header--marketing {
 .layout-header__brand {
   text-decoration: none;
   min-width: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.layout-header__brand-logo {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+.layout-header__brand-title {
+  font-weight: 800;
+  color: #bd0039;
+  letter-spacing: -0.02em;
+  font-size: 1.02rem;
 }
 .layout-header__brand-text {
   font-weight: 800;
@@ -336,6 +356,9 @@ html[data-theme='dark'] .layout-header--marketing {
 }
 html[data-theme='dark'] .layout-header__nav-center a {
   color: var(--text);
+}
+html[data-theme='dark'] .layout-header__link-muted {
+  color: #e2e8f0 !important;
 }
 .layout-header__nav-center a:hover {
   color: #bd0039;

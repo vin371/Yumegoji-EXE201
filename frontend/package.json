@@ -13,6 +13,7 @@
     "@microsoft/signalr": "^8.0.7",
     "axios": "^1.7.9",
     "dompurify": "^3.3.3",
+    "framer-motion": "^12.38.0",
     "marked": "^17.0.5",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

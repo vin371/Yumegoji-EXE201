@@ -1,6 +1,112 @@
 /* ========== Homepage (Sakura Nihongo landing) ========== */
 .homepage {
   width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Scroll reveal */
+.sn-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.65s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sn-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Sakura petals background */
+.sn-petals {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+.sn-petal {
+  position: absolute;
+  top: -12vh;
+  width: 12px;
+  height: 16px;
+  border-radius: 10px 10px 12px 12px;
+  background: linear-gradient(160deg, rgba(255, 210, 225, 0.9), rgba(255, 146, 184, 0.82));
+  opacity: 0.65;
+  filter: drop-shadow(0 1px 2px rgba(189, 0, 57, 0.16));
+  animation: sn-petal-fall linear infinite;
+}
+.sn-petal--1 {
+  left: 7%;
+  animation-duration: 13s;
+  animation-delay: -2s;
+}
+.sn-petal--2 {
+  left: 19%;
+  animation-duration: 16s;
+  animation-delay: -6s;
+  transform: scale(0.8);
+}
+.sn-petal--3 {
+  left: 33%;
+  animation-duration: 11.8s;
+  animation-delay: -4.2s;
+  transform: scale(1.1);
+}
+.sn-petal--4 {
+  left: 45%;
+  animation-duration: 17.2s;
+  animation-delay: -8.5s;
+  transform: scale(0.76);
+}
+.sn-petal:nth-child(5) {
+  left: 58%;
+  animation-duration: 14.8s;
+  animation-delay: -5.5s;
+}
+.sn-petal:nth-child(6) {
+  left: 67%;
+  animation-duration: 10.5s;
+  animation-delay: -9s;
+  transform: scale(0.92);
+}
+.sn-petal:nth-child(7) {
+  left: 74%;
+  animation-duration: 18.4s;
+  animation-delay: -3s;
+}
+.sn-petal:nth-child(8) {
+  left: 82%;
+  animation-duration: 12.6s;
+  animation-delay: -7.7s;
+  transform: scale(1.12);
+}
+.sn-petal:nth-child(9) {
+  left: 89%;
+  animation-duration: 15.1s;
+  animation-delay: -10.4s;
+}
+.sn-petal:nth-child(10) {
+  left: 95%;
+  animation-duration: 11.2s;
+  animation-delay: -1.8s;
+}
+
+@keyframes sn-petal-fall {
+  0% {
+    transform: translate3d(0, -12vh, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate3d(22px, 24vh, 0) rotate(70deg);
+  }
+  55% {
+    transform: translate3d(-26px, 58vh, 0) rotate(148deg);
+  }
+  78% {
+    transform: translate3d(16px, 84vh, 0) rotate(220deg);
+  }
+  100% {
+    transform: translate3d(-8px, 112vh, 0) rotate(300deg);
+  }
 }
 
 .sn-container {
@@ -86,12 +192,23 @@
   background: linear-gradient(135deg, #bd0039 0%, #e61e4d 100%) !important;
   border: none !important;
   box-shadow: rgba(189, 0, 57, 0.22) 0 14px 26px -16px;
+  transition: transform 0.22s ease, box-shadow 0.24s ease, filter 0.2s ease !important;
+}
+.sn-btn--gradient:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: rgba(189, 0, 57, 0.3) 0 18px 34px -16px;
+  filter: saturate(1.08);
 }
 
 .sn-btn--soft {
   background: #ffffff !important;
   border-color: rgba(229, 189, 190, 0.35) !important;
   color: #5c3f41 !important;
+  transition: transform 0.2s ease, box-shadow 0.24s ease !important;
+}
+.sn-btn--soft:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px -16px rgba(15, 23, 42, 0.22);
 }
 
 .sn-hero__visual {
@@ -161,6 +278,16 @@
   border: 1px solid rgba(15, 23, 42, 0.08);
   box-shadow: 0 12px 32px -4px rgba(144, 111, 112, 0.12);
   z-index: 2;
+  animation: sn-float-bob 3.6s ease-in-out infinite;
+}
+@keyframes sn-float-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 .sn-visual-float__icon {
@@ -235,12 +362,13 @@
   padding: 1.75rem;
   box-shadow: 0 12px 32px -4px rgba(144, 111, 112, 0.08);
   min-height: 240px;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 .sn-feature--elevated:hover {
-  transform: translateY(-6px);
+  transform: translateY(-8px) scale(1.01);
   box-shadow: 0 18px 40px -10px rgba(144, 111, 112, 0.14);
+  border-color: rgba(189, 0, 57, 0.18);
 }
 
 .sn-feature--icon-only {
@@ -457,6 +585,12 @@
   border-radius: 16px;
   padding: 2.25rem;
   box-shadow: 0 12px 32px -4px rgba(144, 111, 112, 0.08);
+  transition: transform 0.26s ease, box-shadow 0.26s ease, border-color 0.26s ease;
+}
+.sn-testimonial:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 36px -16px rgba(15, 23, 42, 0.2);
+  border-color: rgba(189, 0, 57, 0.2);
 }
 
 .sn-testimonial__stars {
@@ -540,6 +674,11 @@
   border-radius: 14px !important;
   padding-left: 2.75rem !important;
   padding-right: 2.75rem !important;
+  transition: transform 0.22s ease, box-shadow 0.22s ease !important;
+}
+.sn-cta__btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px -14px rgba(2, 6, 23, 0.45);
 }
 
 .sn-cta__text--wide {
@@ -561,4 +700,68 @@
   color: rgba(255, 255, 255, 0.92);
   position: relative;
   z-index: 1;
+}
+
+/* Dark mode fixes: keep contrast for homepage sections and cards */
+html[data-theme='dark'] .sn-hero {
+  background:
+    radial-gradient(620px 320px at 25% 15%, rgba(251, 113, 133, 0.16), transparent 70%),
+    radial-gradient(720px 360px at 82% 10%, rgba(251, 113, 133, 0.14), transparent 72%),
+    linear-gradient(180deg, #0f172a 0%, #111b32 55%, #0f172a 100%);
+}
+html[data-theme='dark'] .sn-hero__badge {
+  color: #f8fafc;
+  background: rgba(251, 113, 133, 0.18);
+  border-color: rgba(251, 113, 133, 0.3);
+}
+html[data-theme='dark'] .sn-btn--soft {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+  color: #f8fafc !important;
+}
+html[data-theme='dark'] .sn-visual-frame,
+html[data-theme='dark'] .sn-why__img,
+html[data-theme='dark'] .sn-feature,
+html[data-theme='dark'] .sn-testimonial {
+  background: #111b32;
+  border-color: rgba(148, 163, 184, 0.18);
+}
+html[data-theme='dark'] .sn-visual-float {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+html[data-theme='dark'] .sn-visual-float__label {
+  color: #cbd5e1;
+}
+html[data-theme='dark'] .sn-visual-float__value {
+  color: #f8fafc;
+}
+html[data-theme='dark'] .sn-section--method {
+  background: #0b1224;
+  border-top-color: rgba(148, 163, 184, 0.18);
+}
+html[data-theme='dark'] .sn-section--why {
+  background: #0f172a;
+}
+html[data-theme='dark'] .sn-section--testimonials {
+  background: #0b1224;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sn-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .sn-petal,
+  .sn-visual-float {
+    animation: none !important;
+  }
+  .sn-btn--gradient,
+  .sn-btn--soft,
+  .sn-feature,
+  .sn-testimonial,
+  .sn-cta__btn {
+    transition: none !important;
+  }
 }

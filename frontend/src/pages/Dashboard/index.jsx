@@ -57,20 +57,6 @@ function rankProgressFromExp(exp) {
   };
 }
 
-const PROGRESS_BAR_COLORS = ['teal', 'blue', 'purple'];
-
-function levelLabel(code) {
-  const c = String(code || 'N4').toUpperCase();
-  const map = {
-    N5: 'N5 Sơ cấp',
-    N4: 'N4 Trung cấp',
-    N3: 'N3 Trung cao',
-    N2: 'N2 Cao cấp',
-    N1: 'N1 Thành thạo',
-  };
-  return map[c] || `${c} — Học viên`;
-}
-
 export default function Dashboard() {
   const { user, setUser } = useAuth();
   const navigate = useNavigate();
@@ -150,7 +136,6 @@ export default function Dashboard() {
     else if (idNum === 3) levelCode = 'N3';
   }
   levelCode = (levelCode || 'N4').toUpperCase();
-  const levelTitle = levelLabel(levelCode);
 
   const exp = pick(summary, 'exp', 'Exp') ?? 0;
   const streakDays = pick(summary, 'streakDays', 'StreakDays') ?? 0;
@@ -164,73 +149,64 @@ export default function Dashboard() {
     ? byLevel.filter((row) => (pick(row, 'totalPublishedLessons', 'TotalPublishedLessons') ?? 0) > 0)
     : [];
 
+  const levelNumber = Math.max(1, Math.round(Number(exp || 0) / 65));
+  const dailyGoalPct = Math.min(100, Math.max(8, rankInfo.barPct));
+  const xpToNext = Math.max(0, 5000 - (Number(exp || 0) % 5000));
+  const quickActions = [
+    { title: `Tiếp tục học tập ${levelCode}`, sub: 'Tiến tới bài học tiếp theo', to: ROUTES.LEARN, icon: '▶' },
+    { title: 'Chơi game', sub: 'Từ học bài & chơi game (API)', to: ROUTES.PLAY, icon: '🎮' },
+    { title: 'Bảng xếp hạng', sub: 'Theo dõi thứ hạng tuần', to: `${ROUTES.PLAY}/leaderboard`, icon: '📊' },
+    { title: 'Thành tích', sub: 'Hệ thống huy hiệu và EXP', to: `${ROUTES.PLAY}/achievements`, icon: '🏆' },
+  ];
+  const chatRooms = [
+    { name: 'General Chat', sub: 'Phòng công cộng cho mọi học viên' },
+    { name: `${levelCode} Study Group`, sub: `Phòng học theo cấp độ ${levelCode}` },
+    { name: 'Japanese Culture', sub: 'Chia sẻ văn hóa và tips học' },
+  ];
+  const topRows = levelRows.slice(0, 2);
+
   return (
-    <div className="yume-dashboard">
-      <section className="yume-dashboard__hero">
-        <div className="yume-dashboard__hero-text">
-          <h1 className="yume-dashboard__greet">
-            <span className="yume-dashboard__greet-row">
-              <span>
-                Xin chào, {displayName}! <span aria-hidden>👋</span>
-              </span>
-              {isPremium ? <PremiumBadge variant="large" /> : null}
-            </span>
-          </h1>
-          <p className="yume-dashboard__sub">Chào mừng bạn đến với nền tảng học tiếng Nhật</p>
-          {isPremium ? (
-            <div className="yume-dashboard__premium-strip">
-              <PremiumBadge />
-              <p className="yume-dashboard__premium-strip-hint">
-                Bạn đang dùng <strong>gói Premium</strong> — học không giới hạn lượt chơi, mở bài nâng cao và các quyền theo trang Nâng cấp.
-              </p>
-            </div>
-          ) : null}
-        </div>
-        <div
-          className={`yume-dashboard__rank-badge${isPremium ? ' yume-dashboard__rank-badge--premium' : ''}`}
-        >
-          <span className="yume-dashboard__rank-icon" aria-hidden>
-            🎓
-          </span>
-          <div>
-            <div className="yume-dashboard__rank-level">{levelTitle}</div>
-            <div className="yume-dashboard__rank-name">Rank: {rankInfo.currentLabel}</div>
+    <div className="yume-dashboard yume-dashboard--mock">
+      <section className="yume-mock-hero">
+        <div className="yume-mock-hero__left">
+          <div className="yume-mock-tags">
+            {isPremium ? <span className="yume-mock-tag">Premium Member</span> : null}
+            <span className="yume-mock-tag">Rank: {rankInfo.currentLabel}</span>
           </div>
+          <h1 className="yume-mock-greet">
+            Xin chào, <span>{displayName}!</span>
+          </h1>
+          <p className="yume-mock-sub">Ready to master your Kanji today? Hành trình học của bạn đang tiến triển tốt.</p>
         </div>
+        <aside className="yume-mock-rank-card">
+          <div className="yume-mock-rank-card__title">Rank hiện tại</div>
+          <div className="yume-mock-rank-card__name">{rankInfo.currentLabel} Tier</div>
+          <div className="yume-mock-rank-card__line">
+            <span>Progress to next</span>
+            <strong>{rankInfo.barPct}%</strong>
+          </div>
+          <div className="yume-mock-rank-card__track" role="progressbar" aria-valuenow={rankInfo.barPct} aria-valuemin={0} aria-valuemax={100}>
+            <span style={{ width: `${rankInfo.barPct}%` }} />
+          </div>
+        </aside>
       </section>
 
-      <section className="yume-dashboard__stats">
-        <article className="yume-stat-card">
-          <div className="yume-stat-card__icon yume-stat-card__icon--star">⭐</div>
-          <div className="yume-stat-card__label">Cấp độ hiện tại</div>
-          <div className="yume-stat-card__value">{levelTitle}</div>
+      <section className="yume-mock-stats">
+        <article className="yume-mock-stat">
+          <div className="yume-mock-stat__label">Current Level</div>
+          <div className="yume-mock-stat__value">Level {levelNumber}</div>
         </article>
-        <article className="yume-stat-card">
-          <div className="yume-stat-card__icon yume-stat-card__icon--cal">📅</div>
-          <div className="yume-stat-card__label">Chuỗi ngày học</div>
-          <div className="yume-stat-card__value">
-            {summaryLoading ? '…' : `${formatIntVi(streakDays)} ngày`}
-          </div>
-          <div className="yume-stat-card__hint">
-            {summaryLoading ? 'Đang tải…' : streakDays > 0 ? 'Tiếp tục phát huy!' : 'Học hôm nay để bắt đầu chuỗi.'}
-          </div>
+        <article className="yume-mock-stat">
+          <div className="yume-mock-stat__label">Daily Streak</div>
+          <div className="yume-mock-stat__value">{summaryLoading ? '…' : `${formatIntVi(streakDays)} Days`}</div>
         </article>
-        <article className="yume-stat-card">
-          <div className="yume-stat-card__icon yume-stat-card__icon--xp">🏆</div>
-          <div className="yume-stat-card__label">Điểm tích lũy</div>
-          <div className="yume-stat-card__value">
-            {summaryLoading ? '…' : `${formatIntVi(exp)} XP`}
-          </div>
-          <div className="yume-stat-card__hint">
-            {summaryLoading ? 'Đang tải…' : 'Từ học bài & chơi game (API)'}
-          </div>
+        <article className="yume-mock-stat">
+          <div className="yume-mock-stat__label">Accumulated XP</div>
+          <div className="yume-mock-stat__value">{summaryLoading ? '…' : `${formatIntVi(exp)} XP`}</div>
         </article>
-        <article className="yume-stat-card">
-          <div className="yume-stat-card__icon yume-stat-card__icon--lesson">📈</div>
-          <div className="yume-stat-card__label">Bài học hoàn thành</div>
-          <div className="yume-stat-card__value">
-            {summaryLoading ? '…' : `${formatIntVi(completedLessons)} bài`}
-          </div>
+        <article className="yume-mock-stat">
+          <div className="yume-mock-stat__label">Completed Lessons</div>
+          <div className="yume-mock-stat__value">{summaryLoading ? '…' : formatIntVi(completedLessons)}</div>
         </article>
       </section>
 
@@ -240,135 +216,115 @@ export default function Dashboard() {
         </p>
       ) : null}
 
-      <section className="yume-dashboard__rank-bar">
-        <div className="yume-rank-bar__head">
-          <span className="yume-rank-bar__title">
-            <span aria-hidden>⚡</span> Rank hiện tại: {summaryLoading ? '…' : rankInfo.currentLabel}
-          </span>
-          <span className="yume-rank-bar__target">
-            {summaryLoading ? 'Đang tải…' : rankInfo.targetLine}
-          </span>
-        </div>
-        <div
-          className="yume-rank-bar__track"
-          role="progressbar"
-          aria-valuenow={summaryLoading ? 0 : rankInfo.barPct}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <div
-            className="yume-rank-bar__fill"
-            style={{ width: `${summaryLoading ? 0 : rankInfo.barPct}%` }}
-          />
-        </div>
-        <p className="yume-rank-bar__foot">{summaryLoading ? 'Đang tải…' : rankInfo.foot}</p>
-      </section>
-
-      <div className="yume-dashboard__grid2">
-        <section className="yume-panel">
-          <h2 className="yume-panel__title">Tiến độ học tập</h2>
-          <p className="yume-panel__sub">Nội dung cấp độ {levelCode} — {levelTitle}</p>
-          <ul className="yume-progress-list">
-            {summaryLoading ? (
-              <li>
-                <span>Đang tải tiến độ theo cấp độ…</span>
-              </li>
-            ) : levelRows.length === 0 ? (
-              <li>
-                <span>Chưa có bài học đã xuất bản theo cấp độ, hoặc chưa có dữ liệu.</span>
-              </li>
-            ) : (
-              levelRows.map((row, i) => {
-                const code = pick(row, 'levelCode', 'LevelCode') ?? '';
-                const name = pick(row, 'levelName', 'LevelName') ?? code;
-                const pct = Math.round(Number(pick(row, 'completionPercent', 'CompletionPercent')) || 0);
-                const done = pick(row, 'completedLessons', 'CompletedLessons') ?? 0;
-                const total = pick(row, 'totalPublishedLessons', 'TotalPublishedLessons') ?? 0;
-                const color = PROGRESS_BAR_COLORS[i % PROGRESS_BAR_COLORS.length];
-                const label = code ? `${code} — ${name}` : name;
-                return (
-                  <li key={String(pick(row, 'levelId', 'LevelId') ?? i)}>
-                    <span title={`${done}/${total} bài hoàn thành`}>{label}</span>
-                    <div className="yume-progress-track">
-                      <span
-                        className={`yume-progress-track__fill yume-progress-track__fill--${color}`}
-                        style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
-                      />
-                    </div>
-                    <span className="yume-progress-pct">{pct}%</span>
-                  </li>
-                );
-              })
-            )}
-          </ul>
-          <p className="yume-panel__locked">
-            <span aria-hidden>🔒</span> Nội dung N3 sẽ mở khi bạn lên cấp N3
-          </p>
-        </section>
-
-        <section className="yume-panel">
-          <h2 className="yume-panel__title">Hoạt động nhanh</h2>
-          <ul className="yume-quick-list">
-            <li>
-              <Link to={ROUTES.LEARN} className="yume-quick-row">
-                <span>Tiếp tục học tập {levelCode}</span>
-                <span className="yume-quick-row__arrow">→</span>
-              </Link>
-            </li>
-            <li>
-              <Link to={ROUTES.PLAY} className="yume-quick-row">
-                <span>Chơi trò chơi</span>
-                <span className="yume-quick-row__arrow">→</span>
-              </Link>
-            </li>
-            <li>
-              <Link to={`${ROUTES.PLAY}/leaderboard`} className="yume-quick-row">
-                <span>Bảng xếp hạng</span>
-                <span className="yume-quick-row__arrow">→</span>
-              </Link>
-            </li>
-            <li>
-              <Link to={`${ROUTES.PLAY}/achievements`} className="yume-quick-row">
-                <span>Thành tích EXP</span>
-                <span className="yume-quick-row__arrow">→</span>
-              </Link>
-            </li>
-            <li>
-              <Link to={ROUTES.CHAT} className="yume-quick-row">
-                <span>Trò chuyện với học viên khác</span>
-                <span className="yume-quick-row__arrow">→</span>
-              </Link>
-            </li>
-            {levelCode === 'N5' && (
-              <li>
-                <Link to="/level-up-test/N4" className="yume-quick-row yume-quick-row--primary">
-                  <span>Thi lên N4</span>
-                  <span className="yume-quick-row__arrow">→</span>
+      <div className="yume-mock-main">
+        <div className="yume-mock-main__left">
+          <section className="yume-mock-panel">
+            <div className="yume-mock-panel__title">Quick Actions</div>
+            <div className="yume-mock-actions">
+              {quickActions.map((a) => (
+                <Link key={a.title} to={a.to} className="yume-mock-action">
+                  <span className="yume-mock-action__icon">{a.icon}</span>
+                  <span>
+                    <strong>{a.title}</strong>
+                    <small>{a.sub}</small>
+                  </span>
                 </Link>
-              </li>
+              ))}
+            </div>
+            {levelCode === 'N5' && (
+              <Link to="/level-up-test/N4" className="yume-mock-levelup">
+                Thi lên N4 →
+              </Link>
             )}
             {levelCode === 'N4' && (
-              <li>
-                <Link to="/level-up-test/N3" className="yume-quick-row yume-quick-row--primary">
-                  <span>Thi lên N3</span>
-                  <span className="yume-quick-row__arrow">→</span>
-                </Link>
-              </li>
+              <Link to="/level-up-test/N3" className="yume-mock-levelup">
+                Thi lên N3 →
+              </Link>
             )}
-          </ul>
-          <h3 className="yume-chat-rooms__title">Phòng chat dành cho bạn:</h3>
-          <div className="yume-chat-rooms">
-            <Link to={ROUTES.CHAT} className="yume-pill">
-              Phòng chung
+          </section>
+
+          <section className="yume-mock-panel">
+            <div className="yume-mock-panel__title yume-mock-panel__title--row">
+              <span>JLPT Path</span>
+              <Link to={ROUTES.LEARN}>View Curriculum →</Link>
+            </div>
+            <div className="yume-mock-jlpt-list">
+              {summaryLoading ? (
+                <div className="yume-mock-jlpt-empty">Đang tải tiến độ…</div>
+              ) : topRows.length === 0 ? (
+                <div className="yume-mock-jlpt-empty">Chưa có dữ liệu lộ trình.</div>
+              ) : (
+                topRows.map((row, idx) => {
+                  const code = pick(row, 'levelCode', 'LevelCode') ?? '';
+                  const name = pick(row, 'levelName', 'LevelName') ?? code;
+                  const pct = Math.round(Number(pick(row, 'completionPercent', 'CompletionPercent')) || 0);
+                  const done = pick(row, 'completedLessons', 'CompletedLessons') ?? 0;
+                  const total = pick(row, 'totalPublishedLessons', 'TotalPublishedLessons') ?? 0;
+                  return (
+                    <div key={String(pick(row, 'levelId', 'LevelId') ?? idx)} className="yume-mock-jlpt">
+                      <div className="yume-mock-jlpt__badge">{code || 'N?'}</div>
+                      <div className="yume-mock-jlpt__body">
+                        <div className="yume-mock-jlpt__head">
+                          <strong>{name}</strong>
+                          <span>{pct}% Mastery</span>
+                        </div>
+                        <div className="yume-mock-jlpt__track">
+                          <span style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
+                        </div>
+                        <small>
+                          {done}/{total} modules completed
+                        </small>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </section>
+        </div>
+
+        <div className="yume-mock-main__right">
+          <section className="yume-mock-panel">
+            <div className="yume-mock-panel__title">Chat Rooms</div>
+            <div className="yume-mock-rooms">
+              {chatRooms.map((r) => (
+                <Link key={r.name} to={ROUTES.CHAT} className="yume-mock-room">
+                  <span>
+                    <strong>{r.name}</strong>
+                    <small>{r.sub}</small>
+                  </span>
+                  <b>›</b>
+                </Link>
+              ))}
+            </div>
+            <Link to={ROUTES.CHAT} className="yume-mock-room-all">
+              Browse All Rooms
             </Link>
-            <Link to={ROUTES.CHAT} className="yume-pill">
-              {levelTitle}
+          </section>
+
+          <section className="yume-mock-goal">
+            <div className="yume-mock-goal__title">Daily Goal</div>
+            <p>You are {formatIntVi(xpToNext)} XP away from your next rank milestone.</p>
+            <div className="yume-mock-goal__bottom">
+              <div className="yume-mock-goal__ring">
+                <span>{dailyGoalPct}%</span>
+              </div>
+              <Link to={ROUTES.LEARN} className="yume-mock-goal__btn">
+                Study Now
+              </Link>
+            </div>
+          </section>
+          {isPremium ? (
+            <div className="yume-dashboard__premium-strip">
+              <PremiumBadge />
+              <p className="yume-dashboard__premium-strip-hint">Bạn đang dùng gói Premium và đã mở khóa đầy đủ quyền học tập.</p>
+            </div>
+          ) : (
+            <Link className="yume-mock-upgrade" to={ROUTES.UPGRADE}>
+              Nâng cấp Premium để mở toàn bộ tính năng →
             </Link>
-            <Link to={ROUTES.CHAT} className="yume-pill">
-              N5 Sơ cấp
-            </Link>
-          </div>
-        </section>
+          )}
+        </div>
       </div>
 
       <ChatbotWidget />

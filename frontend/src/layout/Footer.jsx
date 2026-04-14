@@ -61,7 +61,7 @@ export function Footer() {
         </div>
       </div>
       <div className="footer-bottom sn-container">
-        <span>&copy; {year} Sakura Nihongo. All rights reserved.</span>
+        <span>&copy; {year} YumeGo-ji. All rights reserved.</span>
       </div>
     </footer>
   );

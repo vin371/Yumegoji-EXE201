@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../../data/routes';
 import { ChatbotWidget } from '../../components/support/ChatbotWidget';
@@ -5,11 +6,35 @@ import { HOMEPAGE_CTA, HOMEPAGE_HERO, HOMEPAGE_METHOD, HOMEPAGE_TESTIMONIALS, HO
 
 /** Trang chủ marketing (Sakura Nihongo) — style: `styles/pages/homepage.css` */
 export default function Homepage() {
+  useEffect(() => {
+    const nodes = Array.from(document.querySelectorAll('.sn-reveal'));
+    if (!nodes.length) return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.16, rootMargin: '0px 0px -8% 0px' }
+    );
+    nodes.forEach((node) => observer.observe(node));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="homepage">
-      <section className="sn-hero">
+      <div className="sn-petals" aria-hidden="true">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <span key={i} className={`sn-petal sn-petal--${(i % 4) + 1}`} />
+        ))}
+      </div>
+
+      <section className="sn-hero sn-reveal is-visible">
         <div className="sn-container sn-hero__grid">
-          <div className="sn-hero__content">
+          <div className="sn-hero__content sn-reveal is-visible">
             <span className="sn-hero__badge">{HOMEPAGE_HERO.badge}</span>
             <h1 className="sn-hero__title">
               {HOMEPAGE_HERO.title} <span className="sn-hero__accent">{HOMEPAGE_HERO.highlight}</span>
@@ -25,7 +50,7 @@ export default function Homepage() {
             </div>
           </div>
 
-          <div className="sn-hero__visual">
+          <div className="sn-hero__visual sn-reveal is-visible">
             <div className="sn-visual-blob" aria-hidden="true" />
             <div className="sn-visual-card sn-visual-card--tilt">
               <div className="sn-visual-frame">
@@ -85,13 +110,13 @@ export default function Homepage() {
         </div>
       </section>
 
-      <section id="method" className="sn-section sn-section--method">
+      <section id="method" className="sn-section sn-section--method sn-reveal">
         <div className="sn-container">
           <h2 className="sn-title">{HOMEPAGE_METHOD.title}</h2>
           <p className="sn-subtitle">{HOMEPAGE_METHOD.subtitle}</p>
           <div className="sn-grid-3">
             {HOMEPAGE_METHOD.features.map((f) => (
-              <article key={f.title} className="sn-feature sn-feature--elevated sn-feature--icon-only">
+              <article key={f.title} className="sn-feature sn-feature--elevated sn-feature--icon-only sn-reveal">
                 <div className="sn-feature__icon" aria-hidden="true">
                   {f.icon}
                 </div>
@@ -106,7 +131,7 @@ export default function Homepage() {
         </div>
       </section>
 
-      <section id="why" className="sn-section sn-section--why">
+      <section id="why" className="sn-section sn-section--why sn-reveal">
         <div className="sn-container sn-why__grid">
           <div className="sn-why__gallery" aria-hidden="true">
             <div className="sn-why__img sn-why__img--a">
@@ -136,13 +161,13 @@ export default function Homepage() {
         </div>
       </section>
 
-      <section id="testimonials" className="sn-section sn-section--testimonials">
+      <section id="testimonials" className="sn-section sn-section--testimonials sn-reveal">
         <div className="sn-container">
           <h2 className="sn-title">{HOMEPAGE_TESTIMONIALS.title}</h2>
           <p className="sn-subtitle">{HOMEPAGE_TESTIMONIALS.subtitle}</p>
           <div className="sn-grid-3">
             {HOMEPAGE_TESTIMONIALS.items.map((t) => (
-              <article key={t.name} className="sn-testimonial">
+              <article key={t.name} className="sn-testimonial sn-reveal">
                 <div className="sn-testimonial__stars" aria-label="5 sao">
                   <span>★</span>
                   <span>★</span>
@@ -164,8 +189,8 @@ export default function Homepage() {
         </div>
       </section>
 
-      <section className="sn-cta">
-        <div className="sn-container sn-cta__inner sn-cta__inner--center">
+      <section className="sn-cta sn-reveal">
+        <div className="sn-container sn-cta__inner sn-cta__inner--center sn-reveal">
           <div className="sn-cta__sakura" aria-hidden="true">
             ❀
           </div>
