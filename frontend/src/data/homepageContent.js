@@ -1,9 +1,7 @@
-import heroImage from '../assets/hero.png';
-import cardLearning from '../assets/play/card-flashcard-vocab.png';
-import cardChat from '../assets/play/pvp-samurai.png';
-import cardGame from '../assets/play/kanji-puzzle.png';
-import whyImageOne from '../assets/play/sentence-builder.png';
-import whyImageTwo from '../assets/play/daily-challenge.png';
+/** Ảnh mẫu (hình 5 / link bạn gửi) — lưu cục bộ trong `public/images/landing/` */
+const HERO_IMAGE_SRC = '/images/landing/hero-mockup.jpg';
+const WHY_IMAGE_CITY = '/images/landing/why-city.jpg';
+const WHY_IMAGE_PAGODA = '/images/landing/why-pagoda.jpg';
 
 export const HOMEPAGE_HERO = {
   badge: 'Chinh phục tiếng Nhật từ hôm nay',
@@ -15,7 +13,7 @@ export const HOMEPAGE_HERO = {
   secondaryCta: 'Xem demo',
   metricLabel: 'Tiến độ tuần này',
   metricValue: '+120 Kanji mới',
-  image: heroImage,
+  image: HERO_IMAGE_SRC,
 };
 
 export const HOMEPAGE_METHOD = {
@@ -28,7 +26,6 @@ export const HOMEPAGE_METHOD = {
       description:
         'Bài giảng có cấu trúc theo năng lực, bám sát JLPT và có bài tập tương tác giúp ghi nhớ từ vựng nhanh.',
       linkLabel: 'Tìm hiểu thêm',
-      image: cardLearning,
     },
     {
       title: 'Trò chuyện',
@@ -36,7 +33,6 @@ export const HOMEPAGE_METHOD = {
       description:
         'Luyện phản xạ hội thoại cùng cộng đồng học viên và giáo viên để tự tin giao tiếp trong ngữ cảnh thực tế.',
       linkLabel: 'Thử ngay',
-      image: cardChat,
     },
     {
       title: 'Trò chơi',
@@ -44,14 +40,14 @@ export const HOMEPAGE_METHOD = {
       description:
         'Mini-game theo chủ điểm giúp ôn Kanji, từ vựng và mẫu câu theo cách vui hơn, nhớ lâu hơn.',
       linkLabel: 'Khám phá kho game',
-      image: cardGame,
     },
   ],
 };
 
 export const HOMEPAGE_WHY = {
   title: 'Tại sao chọn Sakura Nihongo?',
-  images: [whyImageOne, whyImageTwo],
+  /** Thứ tự: đường phố hiện đại · chùa / biển (theo mockup hình 5) */
+  images: [WHY_IMAGE_CITY, WHY_IMAGE_PAGODA],
   items: [
     {
       title: 'Đội ngũ giáo viên Top-tier',

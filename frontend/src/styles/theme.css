@@ -290,18 +290,115 @@ body {
 .layout-header__nav .btn--primary {
   color: #fff !important;
 }
-.layout-footer {
-  border-top: 1px solid var(--border);
+
+/* --- Header marketing (một hàng: logo | nav | đăng nhập/đăng ký) --- */
+.layout-header--marketing {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) minmax(0, auto);
+  align-items: center;
+  column-gap: clamp(0.5rem, 2vw, 1.25rem);
+  row-gap: 0.5rem;
+  padding: 0.75rem clamp(1rem, 3vw, 1.5rem);
+  max-width: 1200px;
+  margin: 0 auto;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+}
+html[data-theme='dark'] .layout-header--marketing {
+  background: color-mix(in srgb, var(--bg) 94%, #0f172a 6%);
+  border-bottom-color: var(--border);
+}
+.layout-header__brand {
+  text-decoration: none;
+  min-width: 0;
+}
+.layout-header__brand-text {
+  font-weight: 800;
+  font-size: clamp(1rem, 2.2vw, 1.15rem);
+  letter-spacing: -0.02em;
+  color: #bd0039;
+  white-space: nowrap;
+}
+.layout-header__nav-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.45rem, 1.4vw, 1.1rem);
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.layout-header__nav-center a {
+  color: #334155;
+  text-decoration: none;
+  font-size: clamp(0.82rem, 1.35vw, 0.94rem);
+  font-weight: 500;
+  white-space: nowrap;
+}
+html[data-theme='dark'] .layout-header__nav-center a {
   color: var(--text);
+}
+.layout-header__nav-center a:hover {
+  color: #bd0039;
+}
+.layout-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  justify-self: end;
+  min-width: 0;
+}
+.layout-header__link-muted {
+  color: #475569 !important;
+  text-decoration: none;
+  font-size: clamp(0.82rem, 1.35vw, 0.94rem);
+  white-space: nowrap;
+}
+.layout-header__cta-register {
+  border-radius: 999px !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  font-size: clamp(0.8rem, 1.3vw, 0.9rem) !important;
+}
+@media (max-width: 760px) {
+  .layout-header--marketing {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+  }
+  .layout-header__brand {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+  }
+  .layout-header__actions {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+  .layout-header__nav-center {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 0.35rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+  }
+}
+
+/* --- Footer (mockup hình 6: nền sáng, 4 cột) --- */
+.layout-footer {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
   font-size: 0.9rem;
   padding: 2.25rem 0 1.25rem;
-  background: #0b1220;
-  color: rgba(226, 232, 240, 0.9);
+  background: #f2f4f6;
+  color: #334155;
 }
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 0.8fr;
+  grid-template-columns: 1.35fr 1fr 1fr 1fr;
   gap: 1.75rem;
   padding: 0 1.5rem;
 }
@@ -311,29 +408,32 @@ body {
   }
 }
 .footer-logo {
-  font-weight: 700;
-  color: #ffffff;
+  font-weight: 800;
+  color: #bd0039;
   margin-bottom: 0.5rem;
 }
 .footer-desc {
-  margin: 0;
-  color: rgba(226, 232, 240, 0.78);
+  margin: 0 0 1rem;
+  color: #64748b;
   max-width: 360px;
 }
 .footer-title {
   margin: 0 0 0.75rem;
-  color: rgba(226, 232, 240, 0.92);
+  color: #0f172a;
   font-size: 0.95rem;
 }
 .footer-link {
   display: block;
-  color: rgba(226, 232, 240, 0.75);
+  color: #475569;
   text-decoration: none;
   padding: 0.25rem 0;
   font-size: 0.9rem;
 }
 .footer-link:hover {
-  color: #ffffff;
+  color: #bd0039;
+}
+.footer-link--static {
+  cursor: default;
 }
 .footer-social {
   display: flex;
@@ -344,25 +444,49 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  border: 1px solid rgba(226, 232, 240, 0.18);
-  background: rgba(2, 6, 23, 0.35);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #ffffff;
 }
 .footer-bottom {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
+  text-align: center;
   gap: 1rem;
   padding: 1.25rem 1.5rem 0;
   margin-top: 1.25rem;
-  border-top: 1px solid rgba(226, 232, 240, 0.12);
-  color: rgba(226, 232, 240, 0.72);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  color: #64748b;
   font-size: 0.85rem;
+}
+html[data-theme='dark'] .layout-footer {
+  background: #0f172a;
+  border-top-color: var(--border);
+  color: rgba(226, 232, 240, 0.9);
+}
+html[data-theme='dark'] .footer-logo {
+  color: #fb7185;
+}
+html[data-theme='dark'] .footer-desc,
+html[data-theme='dark'] .footer-link {
+  color: rgba(226, 232, 240, 0.78);
+}
+html[data-theme='dark'] .footer-title {
+  color: #f1f5f9;
+}
+html[data-theme='dark'] .footer-link:hover {
+  color: #fda4af;
+}
+html[data-theme='dark'] .footer-social__dot {
+  background: rgba(2, 6, 23, 0.45);
+  border-color: rgba(226, 232, 240, 0.15);
+}
+html[data-theme='dark'] .footer-bottom {
+  border-top-color: rgba(226, 232, 240, 0.12);
+  color: rgba(226, 232, 240, 0.65);
 }
 @media (max-width: 900px) {
   .footer-bottom {
     flex-direction: column;
-    align-items: flex-start;
-  }
-  .footer-bottom__right {
-    opacity: 0.85;
+    align-items: center;
   }
 }

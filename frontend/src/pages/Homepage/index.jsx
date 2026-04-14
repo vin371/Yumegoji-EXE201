@@ -91,11 +91,10 @@ export default function Homepage() {
           <p className="sn-subtitle">{HOMEPAGE_METHOD.subtitle}</p>
           <div className="sn-grid-3">
             {HOMEPAGE_METHOD.features.map((f) => (
-              <article key={f.title} className="sn-feature sn-feature--elevated">
-                <div className="sn-feature__media" aria-hidden="true">
-                  <img src={f.image} alt="" loading="lazy" />
+              <article key={f.title} className="sn-feature sn-feature--elevated sn-feature--icon-only">
+                <div className="sn-feature__icon" aria-hidden="true">
+                  {f.icon}
                 </div>
-                <div className="sn-feature__icon">{f.icon}</div>
                 <h3 className="sn-feature__title">{f.title}</h3>
                 <p className="sn-feature__text">{f.description}</p>
                 <a className="sn-feature__link" href="#method">
@@ -137,7 +136,7 @@ export default function Homepage() {
         </div>
       </section>
 
-      <section className="sn-section sn-section--testimonials">
+      <section id="testimonials" className="sn-section sn-section--testimonials">
         <div className="sn-container">
           <h2 className="sn-title">{HOMEPAGE_TESTIMONIALS.title}</h2>
           <p className="sn-subtitle">{HOMEPAGE_TESTIMONIALS.subtitle}</p>

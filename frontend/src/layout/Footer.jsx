@@ -1,38 +1,67 @@
+import { Link } from 'react-router-dom';
+import { ROUTES } from '../data/routes';
+
 export function Footer() {
   const year = new Date().getFullYear();
   return (
-    <footer className="layout-footer">
+    <footer id="site-footer" className="layout-footer">
       <div className="sn-container footer-grid">
         <div className="footer-brand">
           <div className="footer-logo">Sakura Nihongo</div>
           <p className="footer-desc">
             Nền tảng học tiếng Nhật dành cho người Việt — học vui, nhớ lâu, luyện giao tiếp mỗi ngày.
           </p>
-        </div>
-        <div className="footer-col">
-          <h4 className="footer-title">Bài viết</h4>
-          <a className="footer-link" href="#roadmap">Lộ trình học JLPT</a>
-          <a className="footer-link" href="#roadmap">Học Hiragana</a>
-          <a className="footer-link" href="#roadmap">Học Katakana</a>
-        </div>
-        <div className="footer-col">
-          <h4 className="footer-title">Cộng đồng</h4>
-          <a className="footer-link" href="#roadmap">Về chúng tôi</a>
-          <a className="footer-link" href="#roadmap">Liên hệ</a>
-          <a className="footer-link" href="#roadmap">Tuyển dụng</a>
-        </div>
-        <div className="footer-col">
-          <h4 className="footer-title">Theo dõi</h4>
-          <div className="footer-social">
+          <div className="footer-social" aria-label="Mạng xã hội">
             <span className="footer-social__dot" aria-hidden="true" />
             <span className="footer-social__dot" aria-hidden="true" />
             <span className="footer-social__dot" aria-hidden="true" />
           </div>
         </div>
+        <div className="footer-col">
+          <h4 className="footer-title">Học tập</h4>
+          <Link className="footer-link" to={ROUTES.LEARN}>
+            Lộ trình học JLPT
+          </Link>
+          <a className="footer-link" href={`${ROUTES.HOME}#method`}>
+            Học Hiragana
+          </a>
+          <a className="footer-link" href={`${ROUTES.HOME}#method`}>
+            Học Katakana
+          </a>
+          <a className="footer-link" href={`${ROUTES.HOME}#method`}>
+            Ôn Kanji
+          </a>
+        </div>
+        <div className="footer-col">
+          <h4 className="footer-title">Công ty</h4>
+          <a className="footer-link" href={`${ROUTES.HOME}#why`}>
+            Giới thiệu
+          </a>
+          <a className="footer-link" href={`${ROUTES.HOME}#testimonials`}>
+            Blog
+          </a>
+          <a className="footer-link" href={`${ROUTES.HOME}#lien-he`}>
+            Tuyển dụng
+          </a>
+          <span id="lien-he" className="footer-link footer-link--static">
+            Liên hệ: support@sakuranihongo.example
+          </span>
+        </div>
+        <div className="footer-col">
+          <h4 className="footer-title">Pháp lý</h4>
+          <a className="footer-link" href={`${ROUTES.HOME}#site-footer`}>
+            Chính sách bảo mật
+          </a>
+          <a className="footer-link" href={`${ROUTES.HOME}#site-footer`}>
+            Điều khoản sử dụng
+          </a>
+          <a className="footer-link" href={`${ROUTES.HOME}#site-footer`}>
+            Chính sách hoàn tiền
+          </a>
+        </div>
       </div>
       <div className="footer-bottom sn-container">
         <span>&copy; {year} Sakura Nihongo. All rights reserved.</span>
-        <span className="footer-bottom__right">Điều khoản sử dụng • Chính sách bảo mật</span>
       </div>
     </footer>
   );
