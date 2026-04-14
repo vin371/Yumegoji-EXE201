@@ -1,0 +1,101 @@
+import heroImage from '../assets/hero.png';
+import cardLearning from '../assets/play/card-flashcard-vocab.png';
+import cardChat from '../assets/play/pvp-samurai.png';
+import cardGame from '../assets/play/kanji-puzzle.png';
+import whyImageOne from '../assets/play/sentence-builder.png';
+import whyImageTwo from '../assets/play/daily-challenge.png';
+
+export const HOMEPAGE_HERO = {
+  badge: 'Chinh phục tiếng Nhật từ hôm nay',
+  title: 'Học tiếng Nhật',
+  highlight: 'Thật phong cách.',
+  description:
+    'Khám phá lộ trình học tiếng Nhật hiện đại, kết hợp tri thức văn hóa và công nghệ học tập để biến hành trình mỗi ngày thành trải nghiệm thú vị.',
+  primaryCta: 'Bắt đầu học ngay',
+  secondaryCta: 'Xem demo',
+  metricLabel: 'Tiến độ tuần này',
+  metricValue: '+120 Kanji mới',
+  image: heroImage,
+};
+
+export const HOMEPAGE_METHOD = {
+  title: 'Phương pháp Hanami độc bản',
+  subtitle: 'Chúng tôi tái định nghĩa cách bạn tiếp cận ngôn ngữ thông qua sự kết hợp giữa tương tác và giải trí.',
+  features: [
+    {
+      title: 'Học tập',
+      icon: '📚',
+      description:
+        'Bài giảng có cấu trúc theo năng lực, bám sát JLPT và có bài tập tương tác giúp ghi nhớ từ vựng nhanh.',
+      linkLabel: 'Tìm hiểu thêm',
+      image: cardLearning,
+    },
+    {
+      title: 'Trò chuyện',
+      icon: '💬',
+      description:
+        'Luyện phản xạ hội thoại cùng cộng đồng học viên và giáo viên để tự tin giao tiếp trong ngữ cảnh thực tế.',
+      linkLabel: 'Thử ngay',
+      image: cardChat,
+    },
+    {
+      title: 'Trò chơi',
+      icon: '🎮',
+      description:
+        'Mini-game theo chủ điểm giúp ôn Kanji, từ vựng và mẫu câu theo cách vui hơn, nhớ lâu hơn.',
+      linkLabel: 'Khám phá kho game',
+      image: cardGame,
+    },
+  ],
+};
+
+export const HOMEPAGE_WHY = {
+  title: 'Tại sao chọn Sakura Nihongo?',
+  images: [whyImageOne, whyImageTwo],
+  items: [
+    {
+      title: 'Đội ngũ giáo viên Top-tier',
+      description:
+        'Giáo viên có kinh nghiệm luyện thi JLPT và tập trung sửa lỗi phát âm, ngữ điệu theo từng học viên.',
+    },
+    {
+      title: 'Lộ trình cá nhân hóa',
+      description: 'Hệ thống theo dõi tiến độ và gợi ý nội dung phù hợp để bạn học đúng phần còn yếu.',
+    },
+    {
+      title: 'Hỗ trợ 24/7',
+      description: 'Đồng hành giải đáp trong suốt quá trình học để bạn không bị ngắt mạch tiến bộ.',
+    },
+  ],
+};
+
+export const HOMEPAGE_TESTIMONIALS = {
+  title: 'Cảm nhận của học viên',
+  subtitle: 'Hơn 50,000 học viên đã bắt đầu hành trình và thành công.',
+  items: [
+    {
+      name: 'Minh Anh',
+      level: 'Học viên N2',
+      quote:
+        'Phương pháp học qua trò chơi khiến mình duy trì thói quen đều hơn. Kanji dễ nhớ hơn rất nhiều.',
+    },
+    {
+      name: 'Hoàng Nam',
+      level: 'Học viên N3',
+      quote:
+        'Lớp luyện nói giúp mình tự tin giao tiếp hơn trong công việc. Mình tiến bộ rõ chỉ sau vài tháng.',
+    },
+    {
+      name: 'Thu Thảo',
+      level: 'Học viên N4',
+      quote:
+        'Giao diện dễ dùng, bài học mạch lạc và có nhiều hoạt động tương tác nên học không bị chán.',
+    },
+  ],
+};
+
+export const HOMEPAGE_CTA = {
+  title: 'Sẵn sàng để bắt đầu chưa?',
+  subtitle: 'Nhận ngay ưu đãi 30% cho khóa học đầu tiên khi đăng ký tài khoản trong hôm nay.',
+  button: 'Tạo tài khoản ngay',
+};

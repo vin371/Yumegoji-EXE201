@@ -77,6 +77,9 @@ export function ChatbotWidget() {
   return (
     <>
       <div className="support-chat-fab-wrap">
+        <span className="support-chat-fab__hint">
+          {isAuthenticated ? 'Chatbot & moderator' : 'Chatbot (Khách)'}
+        </span>
         <button
           type="button"
           className="support-chat-fab"
@@ -84,11 +87,15 @@ export function ChatbotWidget() {
           aria-label="Chatbot YumeGo-ji và hỗ trợ"
           onClick={() => setOpen((o) => !o)}
         >
-          🤖
+          <svg className="support-chat-fab__icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="5" y="9" width="14" height="10" rx="2" fill="currentColor" opacity="0.95" />
+            <circle cx="9" cy="13" r="1.2" fill="#1e1b4b" />
+            <circle cx="15" cy="13" r="1.2" fill="#1e1b4b" />
+            <path d="M9 16h6" stroke="#1e1b4b" strokeWidth="1.2" strokeLinecap="round" />
+            <path d="M12 4v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" />
+            <circle cx="12" cy="3" r="1.2" fill="currentColor" opacity="0.85" />
+          </svg>
         </button>
-        <span className="support-chat-fab__hint">
-          {isAuthenticated ? 'Chatbot & moderator' : 'Chatbot (khách)'}
-        </span>
       </div>
 
       {open && (

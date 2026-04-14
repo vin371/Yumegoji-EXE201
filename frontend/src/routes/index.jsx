@@ -5,7 +5,7 @@ import { PrivateRoute } from './guards/PrivateRoute';
 import { AdminRoute } from './guards/AdminRoute';
 import { ModeratorRoute } from './guards/ModeratorRoute';
 
-const Home = lazy(() => import('../pages/Home'));
+const Homepage = lazy(() => import('../pages/Homepage'));
 const Login = lazy(() => import('../pages/Login'));
 const Register = lazy(() => import('../pages/Register'));
 const Dashboard = lazy(() => import('../pages/Dashboard'));
@@ -37,7 +37,7 @@ function AppRoutes() {
   return (
     <Suspense fallback={<div className="app-loading">Đang tải...</div>}>
       <Routes>
-        <Route path={ROUTES.HOME} element={<Home />} />
+        <Route path={ROUTES.HOME} element={<Homepage />} />
         <Route path={ROUTES.LOGIN} element={<Login />} />
         <Route path={ROUTES.REGISTER} element={<Register />} />
         <Route

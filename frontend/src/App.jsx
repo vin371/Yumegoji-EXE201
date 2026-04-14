@@ -12,7 +12,7 @@ import { ROUTES } from './data/routes';
 import './index.css';
 import './styles/theme.css';
 import './styles/learner-nav.css';
-import './styles/pages/home.css';
+import './styles/pages/homepage.css';
 import './styles/pages/auth.css';
 import './styles/pages/chat.css';
 import './styles/pages/dashboard.css';

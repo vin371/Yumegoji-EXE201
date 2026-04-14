@@ -16,7 +16,7 @@ export function Footer() {
           <a className="footer-link" href="#roadmap">Học Katakana</a>
         </div>
         <div className="footer-col">
-          <h4 className="footer-title">Cộng tác</h4>
+          <h4 className="footer-title">Cộng đồng</h4>
           <a className="footer-link" href="#roadmap">Về chúng tôi</a>
           <a className="footer-link" href="#roadmap">Liên hệ</a>
           <a className="footer-link" href="#roadmap">Tuyển dụng</a>

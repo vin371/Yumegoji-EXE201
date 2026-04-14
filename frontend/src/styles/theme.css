@@ -216,11 +216,41 @@ body {
   filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.25));
 }
 
-.layout-header__logo-img {
+.layout-header__logo-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.layout-header__sakura-ring {
+  display: inline-flex;
+  width: 44px;
   height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #fff1f2, #fffbeb);
+  border: 1px solid rgba(225, 29, 72, 0.22);
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.12);
+}
+
+.layout-header__sakura-svg {
+  display: block;
+}
+
+.layout-header__wordmark {
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+}
+
+.layout-header__logo-img {
+  height: 34px;
   width: auto;
   display: block;
-  border-radius: 999px;
+  border-radius: 0;
 }
 .layout-header__nav {
   display: flex;

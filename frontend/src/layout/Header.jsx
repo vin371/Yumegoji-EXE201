@@ -12,7 +12,7 @@ export function Header() {
 
   return (
     <header className="layout-header">
-      <Link to={ROUTES.HOME} className="layout-header__logo">
+      <Link to={ROUTES.HOME} className="layout-header__logo" aria-label="YumeGo-ji — về trang chủ">
         <img src={yumeLogo} alt="YumeGo-ji" className="layout-header__logo-img" />
       </Link>
       <nav className="layout-header__nav">
