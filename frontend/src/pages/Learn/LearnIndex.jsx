@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { ROUTES } from '../../data/routes';
 import { N5_LESSONS } from '../../data/n5BeginnerCourse';
 import { useAuth } from '../../hooks/useAuth';
 import http from '../../api/client';
 import { isStaffUser } from '../../utils/roles';
+import { getJlptLevelCodeFromUser } from '../../utils/learnLevelCode';
+import { LearnProgressRing } from './components/LearnProgressRing';
 
 function extractPreviewTiles(title, max = 5) {
   const jp = title?.match(/[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/g);
@@ -59,8 +61,22 @@ function displayCategory(name) {
   return s.toUpperCase();
 }
 
+const SECTION_HEAD_VI = {
+  all: 'Tất cả bài từ hệ thống',
+  dialogue: 'Hội thoại',
+  reference: 'Tra cứu',
+  reading: 'Bài đọc',
+  vocab: 'Từ vựng',
+  kanji: 'Kanji',
+  grammar: 'Ngữ pháp',
+};
+
+function openLearnAiPanel() {
+  window.dispatchEvent(new CustomEvent('yume-open-learn-ai'));
+}
+
 /** Thẻ lưới — bám sát mẫu (XONG / ĐANG HỌC, nền trắng, viền đỏ bài đang học) */
-function TrackCard({ lesson, state, to }) {
+function TrackCard({ lesson, state, to, progressPercent }) {
   const tiles = extractPreviewTiles(lesson.title, 5);
   const isLocked = state === 'locked';
   const badge =
@@ -88,6 +104,11 @@ function TrackCard({ lesson, state, to }) {
         <span className="learn-track-card__cat">{displayCategory(lesson.categoryName)}</span>
       </div>
       <h4 className="learn-track-card__title">{lesson.title}</h4>
+      {state === 'active' && progressPercent != null ? (
+        <div className="learn-track-card__mini-prog" aria-hidden>
+          <div className="learn-track-card__mini-prog-fill" style={{ width: `${Math.min(100, progressPercent)}%` }} />
+        </div>
+      ) : null}
       <div className="learn-track-card__tiles" aria-hidden>
         {tiles.map((ch, i) => (
           <span key={i} className="learn-track-card__tile" lang="ja">
@@ -112,10 +133,13 @@ function TrackCard({ lesson, state, to }) {
 
 export default function LearnIndex() {
   const { isAuthenticated, user } = useAuth();
+  const { sectionFilter } = useOutletContext() || {};
+  const filterKey = sectionFilter || 'all';
   const staffNoLearnerTests = isStaffUser(user);
   const [apiLessons, setApiLessons] = useState([]);
   const [progressItems, setProgressItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('grid');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -187,26 +211,34 @@ export default function LearnIndex() {
   const progressPct = totalTrack ? Math.round((doneTrack / totalTrack) * 100) : 0;
 
   const remainder = Math.max(0, totalTrack - doneTrack);
+  const levelCode = getJlptLevelCodeFromUser(user);
+  const sectionHeadline = SECTION_HEAD_VI[filterKey] ?? SECTION_HEAD_VI.all;
+
+  function lessonProgressPercent(lessonId) {
+    const p = progressByLessonId.get(lessonId);
+    if (!p) return null;
+    return Number(p.progressPercent ?? p.ProgressPercent ?? 0);
+  }
 
   return (
     <div className="learn-dashboard">
-      <header className="learn-dashboard__hero">
+      <header className="learn-dashboard__hero learn-dashboard__hero--compact">
         <div className="learn-dashboard__hero-main">
-          <span className="learn-dashboard__tag">CHƯƠNG TRÌNH N5</span>
-          <h1 className="learn-dashboard__title">Lộ trình học tập</h1>
+          <span className="learn-dashboard__tag">Lộ trình YumeGo-ji</span>
+          <h1 className="learn-dashboard__title">
+            Lộ trình học tập <span className="learn-dashboard__title-accent">JLPT</span>
+          </h1>
           <p className="learn-dashboard__lead">
             {isAuthenticated
-              ? 'Theo dõi tiến độ bài từ hệ thống, ôn bài đã xong và tiếp tục bài đang học. Bài mẫu N5 học thêm ở khối phía dưới.'
-              : 'Đăng nhập để lưu tiến độ bài moderator. Bài mẫu N5 vẫn mở được để học thử.'}
+              ? 'Theo dõi tiến độ bài hệ thống, ôn bài đã xong và tiếp tục bài đang học.'
+              : 'Đăng nhập để lưu tiến độ. Bài mẫu N5 luôn mở để học thử.'}
           </p>
         </div>
-        <div className="learn-dashboard__stat-card">
-          <div className="learn-dashboard__stat-label">Tiến độ hoàn thành</div>
-          <div className="learn-dashboard__stat-pct">{totalTrack ? `${progressPct}%` : '—'}</div>
-          <div className="learn-dashboard__stat-bar" aria-hidden>
-            <div className="learn-dashboard__stat-fill" style={{ width: `${progressPct}%` }} />
-          </div>
-          <p className="learn-dashboard__stat-meta">
+        <div className="learn-dashboard__hero-ring-wrap">
+          <LearnProgressRing size={108} percent={totalTrack ? progressPct : null} />
+          <p className="learn-hero-ring__kicker">Tiến độ tổng</p>
+          <p className="learn-hero-ring__level">Cấp độ {levelCode}</p>
+          <p className="learn-dashboard__stat-meta learn-dashboard__stat-meta--under-ring">
             {totalTrack > 0
               ? remainder > 0
                 ? `${doneTrack}/${totalTrack} bài hoàn thành — Còn ${remainder} bài`
@@ -224,21 +256,40 @@ export default function LearnIndex() {
 
       {sortedApi.length > 0 ? (
         <section className="learn-track learn-track--cards" aria-labelledby="learn-track-api-title">
-          <div className="learn-section-head">
-            <h2 id="learn-track-api-title" className="learn-section-head__title">
-              BÀI TỪ HỆ THỐNG
-            </h2>
-            <span className="learn-section-head__link" aria-hidden>
-              Xem tất cả ›
-            </span>
+          <div className="learn-section-head learn-section-head--m2">
+            <div>
+              <h2 id="learn-track-api-title" className="learn-section-head__title learn-section-head__title--system">
+                Bài từ hệ thống
+              </h2>
+              <p className="learn-section-head__sub">Học phần: {sectionHeadline}</p>
+            </div>
+            <div className="learn-view-toggle" role="group" aria-label="Kiểu xem">
+              <button
+                type="button"
+                className={`learn-view-toggle__btn${viewMode === 'grid' ? ' learn-view-toggle__btn--on' : ''}`}
+                onClick={() => setViewMode('grid')}
+                aria-pressed={viewMode === 'grid'}
+              >
+                Lưới
+              </button>
+              <button
+                type="button"
+                className={`learn-view-toggle__btn${viewMode === 'list' ? ' learn-view-toggle__btn--on' : ''}`}
+                onClick={() => setViewMode('list')}
+                aria-pressed={viewMode === 'list'}
+              >
+                Danh sách
+              </button>
+            </div>
           </div>
-          <div className="learn-track__grid">
+          <div className={`learn-track__grid learn-track__grid--m2${viewMode === 'list' ? ' learn-track__grid--list' : ''}`}>
             {apiRows.map(({ lesson, state }) => (
               <TrackCard
                 key={lesson.id}
                 lesson={lesson}
                 state={state}
                 to={`${ROUTES.LEARN}/${encodeURIComponent(lesson.slug)}`}
+                progressPercent={state === 'active' ? lessonProgressPercent(lesson.id) ?? 40 : null}
               />
             ))}
           </div>
@@ -256,7 +307,7 @@ export default function LearnIndex() {
             Lộ trình mẫu
           </span>
         </div>
-        <div className="learn-track__grid learn-track__grid--n5">
+        <div className={`learn-track__grid learn-track__grid--n5 learn-track__grid--m2${viewMode === 'list' ? ' learn-track__grid--list' : ''}`}>
           {n5Rows.map(({ lesson, state }) => (
             <TrackCard
               key={lesson.slug}
@@ -268,9 +319,29 @@ export default function LearnIndex() {
               }}
               state={state}
               to={`${ROUTES.LEARN}/${encodeURIComponent(lesson.slug)}`}
+              progressPercent={null}
             />
           ))}
         </div>
+      </section>
+
+      <section className="learn-ai-promo" aria-labelledby="learn-ai-promo-title" id="learn-ai-sensei">
+        <div className="learn-ai-promo__text">
+          <h2 id="learn-ai-promo-title" className="learn-ai-promo__title">
+            Hội thoại thực tế — luyện với AI Sensei
+          </h2>
+          <p className="learn-ai-promo__desc">
+            Hỏi ngữ pháp, từ vựng; gửi ảnh bài tập hoặc tài liệu — AI phản hồi ngay trong khung chat (Ollama). Giữ
+            thói quen luyện mỗi ngày.
+          </p>
+          <div className="learn-ai-promo__row">
+            <button type="button" className="learn-ai-promo__cta" onClick={openLearnAiPanel}>
+              Bắt đầu ngay
+            </button>
+            <span className="learn-ai-promo__xp">+500 XP mỗi phiên luyện tập</span>
+          </div>
+        </div>
+        <div className="learn-ai-promo__art" aria-hidden />
       </section>
 
       {!staffNoLearnerTests ? (

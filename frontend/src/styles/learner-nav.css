@@ -22,7 +22,9 @@
 .learner-nav__brand {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   text-decoration: none;
+  color: inherit;
 }
 
 .learner-nav__brand-logo {
@@ -30,6 +32,23 @@
   width: auto;
   display: block;
   border-radius: 999px;
+}
+
+.learner-nav__brand-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  color: #b72025;
+}
+
+html[data-theme='dark'] .learner-nav__brand-title {
+  color: #fca5a5;
+}
+
+@media (max-width: 520px) {
+  .learner-nav__brand-title {
+    display: none;
+  }
 }
 
 .learner-nav__links {
@@ -54,25 +73,27 @@
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
+/* Accent đỏ YumeGo-ji (mẫu nav — không dùng xanh) */
 .learner-nav__link:hover {
-  background: color-mix(in srgb, #2563eb 8%, var(--bg));
-  color: #1e40af;
+  background: color-mix(in srgb, #b72025 10%, var(--bg));
+  color: #991b1b;
 }
 
 html[data-theme='dark'] .learner-nav__link:hover {
-  color: #93c5fd;
-  background: color-mix(in srgb, #3b82f6 12%, var(--bg));
+  color: #fecaca;
+  background: color-mix(in srgb, #f87171 14%, var(--bg));
 }
 
 .learner-nav__link--active {
-  background: color-mix(in srgb, #2563eb 12%, var(--bg));
-  color: #1d4ed8;
-  border-color: color-mix(in srgb, #2563eb 22%, var(--border));
+  background: color-mix(in srgb, #b72025 14%, var(--bg));
+  color: #7f1d1d;
+  border-color: color-mix(in srgb, #b72025 30%, var(--border));
 }
 
 html[data-theme='dark'] .learner-nav__link--active {
-  color: #93c5fd;
-  border-color: rgba(59, 130, 246, 0.35);
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.45);
+  background: color-mix(in srgb, #b91c1c 22%, var(--bg));
 }
 
 .learner-nav__ico {
@@ -146,7 +167,7 @@ html[data-theme='dark'] .learner-nav__nav-badge {
 }
 
 .learner-nav__user:hover {
-  border-color: color-mix(in srgb, #2563eb 30%, var(--border));
+  border-color: color-mix(in srgb, #b72025 35%, var(--border));
 }
 
 /* Viền VIP (CSS): từ 100 xu — có thể thay bằng ảnh PNG/SVG sau nếu muốn. */
@@ -223,9 +244,14 @@ html[data-theme='dark'] .learner-nav__nav-badge {
 }
 
 .learner-nav__user-role {
-  font-size: 0.72rem;
-  color: var(--text);
-  opacity: 0.75;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  opacity: 1;
+}
+
+html[data-theme='dark'] .learner-nav__user-role {
+  color: #cbd5e1;
 }
 
 .learner-nav__caret {
@@ -262,7 +288,7 @@ html[data-theme='dark'] .learner-nav__nav-badge {
 }
 
 .learner-nav__dropdown-item:hover {
-  background: color-mix(in srgb, #2563eb 10%, var(--bg));
+  background: color-mix(in srgb, #b72025 10%, var(--bg));
 }
 
 .learner-nav__dropdown-item--danger:hover {

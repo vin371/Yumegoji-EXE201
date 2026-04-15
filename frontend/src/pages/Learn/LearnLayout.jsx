@@ -1,10 +1,11 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../data/routes';
 import { N5_LESSONS } from '../../data/n5BeginnerCourse';
 import { useAuth } from '../../hooks/useAuth';
 import http from '../../api/client';
 import LearnAiWidget from './LearnAiWidget';
+import { LearnSidebarShell } from './components/LearnSidebarShell';
 
 const SECTION_ORDER = ['dialogue', 'reference', 'reading', 'vocab', 'kanji', 'grammar'];
 const STATIC_SLUGS = new Set(N5_LESSONS.map((l) => l.slug));
@@ -109,60 +110,6 @@ async function fetchLearnLayoutSnapshot(isAuthenticated) {
   }
 }
 
-function IconBookMini({ className }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M4 5a2 2 0 012-2h5v16H6a2 2 0 01-2-2V5zm8-2h5a2 2 0 012 2v11a2 2 0 01-2 2h-5V3z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function IconRoadmap({ className }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function IconChar({ className }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M4 19.5A2.5 2.5 0 016.5 17H20"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path d="M10 8h4M12 6v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconGrammar({ className }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-      <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 export default function LearnLayout() {
   const { isAuthenticated, user } = useAuth();
   const location = useLocation();
@@ -255,156 +202,30 @@ export default function LearnLayout() {
   return (
     <div className="page learn-layout learn-layout--shodo yume-page">
       <div className="learn-layout__grid learn-layout__grid--shodo">
-        <aside className="learn-layout__nav learn-sidebar" aria-label="Điều hướng khóa học">
-          <Link className="learn-sidebar__back" to={ROUTES.DASHBOARD}>
-            ← Về Dashboard
-          </Link>
-
-          <div className="learn-sidebar__progress-card">
-            <div className="learn-sidebar__progress-icon" aria-hidden>
-              <IconBookMini />
-            </div>
-            <div className="learn-sidebar__progress-body">
-              <div className="learn-sidebar__progress-name">{displayName}</div>
-              <div className="learn-sidebar__progress-label">Học viên · Lộ trình N5</div>
-              <div className="learn-sidebar__progress-track" aria-hidden>
-                <div
-                  className="learn-sidebar__progress-fill"
-                  style={{ width: `${isAuthenticated && sidebarTotal ? sidebarPct : 0}%` }}
-                />
-              </div>
-              <p className="learn-sidebar__progress-meta">
-                {isAuthenticated && sidebarTotal > 0
-                  ? `Tiến độ: ${sidebarPct}% · ${sidebarDone}/${sidebarTotal} bài`
-                  : isAuthenticated
-                    ? 'Chưa có bài hệ thống — học bài mẫu N5 bên phải'
-                    : 'Đăng nhập để lưu tiến độ bài hệ thống'}
-              </p>
-            </div>
-          </div>
-
-          <nav className="learn-sidebar__quick" aria-label="Lối tắt chương">
-            <NavLink
-              to={ROUTES.LEARN}
-              end
-              className={({ isActive }) =>
-                `learn-sidebar__quick-link${isActive ? ' learn-sidebar__quick-link--active' : ''}`
-              }
-            >
-              <IconRoadmap className="learn-sidebar__quick-ico" />
-              Lộ trình
-            </NavLink>
-            <button
-              type="button"
-              className={`learn-sidebar__quick-link${sectionFilter === 'all' && isLearnIndex ? ' learn-sidebar__quick-link--active' : ''}`}
-              onClick={() => goFilter('all')}
-            >
-              <IconBookMini className="learn-sidebar__quick-ico" />
-              Bài học
-            </button>
-            <button
-              type="button"
-              className={`learn-sidebar__quick-link${sectionFilter === 'vocab' ? ' learn-sidebar__quick-link--active' : ''}`}
-              onClick={() => goFilter('vocab')}
-            >
-              <IconChar className="learn-sidebar__quick-ico" />
-              Từ vựng
-            </button>
-            <button
-              type="button"
-              className={`learn-sidebar__quick-link${sectionFilter === 'grammar' ? ' learn-sidebar__quick-link--active' : ''}`}
-              onClick={() => goFilter('grammar')}
-            >
-              <IconGrammar className="learn-sidebar__quick-ico" />
-              Ngữ pháp
-            </button>
-          </nav>
-
-          <div className="learn-nav__group-label learn-sidebar__list-label">Danh sách bài</div>
-          <div className="learn-nav__tabs" role="tablist" aria-label="Lọc theo nhóm">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={sectionFilter === 'all'}
-              className={`learn-nav__tab${sectionFilter === 'all' ? ' learn-nav__tab--active' : ''}`}
-              onClick={() => setSectionFilter('all')}
-            >
-              Tất cả
-            </button>
-            {lessonGroups.map((g) => (
-              <button
-                key={g.section}
-                type="button"
-                role="tab"
-                aria-selected={sectionFilter === g.section}
-                className={`learn-nav__tab${sectionFilter === g.section ? ' learn-nav__tab--active' : ''}`}
-                onClick={() => setSectionFilter(g.section)}
-              >
-                {g.label}
-              </button>
-            ))}
-          </div>
-          <div className="learn-sidebar__scroll">
-            {visibleGroups.map((group) => (
-              <Fragment key={group.section}>
-                {sectionFilter === 'all' ? (
-                  <div className="learn-nav__section-label">{group.label}</div>
-                ) : null}
-                <ul className="learn-nav__list learn-nav__list--section">
-                  {group.items.map((lesson) => (
-                    <li key={lesson.slug}>
-                      <NavLink
-                        to={`${ROUTES.LEARN}/${lesson.slug}`}
-                        className={({ isActive }) =>
-                          `learn-nav__link${isActive ? ' learn-nav__link--active' : ''}`
-                        }
-                        end
-                      >
-                        <span className="learn-nav__text">{lesson.navTitle}</span>
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              </Fragment>
-            ))}
-            {visibleDbLessons.length > 0 ? (
-              <>
-                <div className="learn-nav__section-label learn-nav__section-label--db">Bài từ hệ thống</div>
-                <ul className="learn-nav__list learn-nav__list--section">
-                  {visibleDbLessons.map((row) => {
-                    const slug = row.slug ?? row.Slug;
-                    const title = row.title ?? row.Title;
-                    const cat = row.categoryName ?? row.CategoryName;
-                    return (
-                      <li key={row.id ?? row.Id}>
-                        <NavLink
-                          to={`${ROUTES.LEARN}/${encodeURIComponent(slug)}`}
-                          className={({ isActive }) =>
-                            `learn-nav__link learn-nav__link--stack${isActive ? ' learn-nav__link--active' : ''}`
-                          }
-                          end
-                        >
-                          <span className="learn-nav__db-meta">{cat}</span>
-                          <span className="learn-nav__text">{title}</span>
-                        </NavLink>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </>
-            ) : null}
-          </div>
-
-          {ctaSlug ? (
-            <Link className="learn-sidebar__cta" to={`${ROUTES.LEARN}/${encodeURIComponent(ctaSlug)}`}>
-              <span className="learn-sidebar__cta-kicker">TIẾP TỤC HÀNH TRÌNH</span>
-              <span className="learn-sidebar__cta-title">{ctaTitle}</span>
-            </Link>
-          ) : null}
-        </aside>
+        <LearnSidebarShell
+          user={user}
+          displayName={displayName}
+          isAuthenticated={isAuthenticated}
+          sidebarPct={sidebarPct}
+          sidebarDone={sidebarDone}
+          sidebarTotal={sidebarTotal}
+          sectionFilter={sectionFilter}
+          goFilter={goFilter}
+          lessonGroups={lessonGroups}
+          visibleGroups={visibleGroups}
+          visibleDbLessons={visibleDbLessons}
+          ctaSlug={ctaSlug}
+          ctaTitle={ctaTitle}
+        />
 
         <main className="learn-layout__main learn-layout__main--shodo">
-          <Outlet context={{ reloadSidebarProgress: reloadLearnLayoutData }} />
+          <Outlet
+            context={{
+              reloadSidebarProgress: reloadLearnLayoutData,
+              sectionFilter,
+              goFilter,
+            }}
+          />
         </main>
       </div>
       <LearnAiWidget isAuthenticated={isAuthenticated} />

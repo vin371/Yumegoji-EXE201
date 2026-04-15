@@ -111,8 +111,13 @@ export function LearnerTopNav() {
   return (
     <header className="learner-nav">
       <div className="learner-nav__inner">
-        <Link to={isAdminUser ? ROUTES.ADMIN : isModeratorUser ? ROUTES.MODERATOR : ROUTES.DASHBOARD} className="learner-nav__brand">
-          <img src={yumeLogo} alt="YumeGo-ji" className="learner-nav__brand-logo" />
+        <Link
+          to={isAdminUser ? ROUTES.ADMIN : isModeratorUser ? ROUTES.MODERATOR : ROUTES.DASHBOARD}
+          className="learner-nav__brand"
+          aria-label="YumeGo-ji"
+        >
+          <img src={yumeLogo} alt="" className="learner-nav__brand-logo" />
+          <span className="learner-nav__brand-title">YumeGo-ji</span>
         </Link>
 
         <nav

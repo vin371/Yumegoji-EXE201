@@ -17,6 +17,7 @@ import './styles/pages/auth.css';
 import './styles/pages/chat.css';
 import './styles/pages/dashboard.css';
 import './styles/pages/yume-dashboard.css';
+import './styles/pages/level-up-test.css';
 import './styles/pages/upgrade.css';
 import './styles/pages/learn-course.css';
 import './styles/pages/admin-dashboard.css';
@@ -34,6 +35,8 @@ function AppShell() {
       location.pathname.startsWith(ROUTES.MODERATOR) ||
       location.pathname.startsWith(ROUTES.LEARN) ||
       location.pathname.startsWith(ROUTES.PLAY) ||
+      location.pathname.startsWith('/level-up-test') ||
+      location.pathname.startsWith(ROUTES.PLACEMENT_TEST) ||
       chatFull);
 
   return (

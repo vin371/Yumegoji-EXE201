@@ -1,0 +1,537 @@
+/* Trang thi nâng level — phong cách thẻ + accent hồng/magenta (mẫu UI) */
+
+.level-up-page {
+  --level-up-accent: #c2185b;
+  --level-up-accent-soft: color-mix(in srgb, var(--level-up-accent) 12%, transparent);
+  --level-up-card: #fff;
+  --level-up-muted: #64748b;
+  --level-up-radius: 14px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1rem 1rem 5.5rem;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+.level-up-page--state {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--level-up-muted);
+}
+
+/* --- Thanh đề --- */
+.level-up-exam-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 0.65rem 0 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--level-up-accent) 18%, #e2e8f0);
+}
+
+.level-up-exam-bar__left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+}
+
+.level-up-exam-bar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  color: inherit;
+  font-weight: 700;
+}
+
+.level-up-exam-bar__logo {
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.level-up-exam-bar__name {
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+.level-up-exam-bar__sep {
+  width: 1px;
+  height: 1.5rem;
+  background: #e2e8f0;
+}
+
+.level-up-exam-bar__title {
+  margin: 0;
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  font-weight: 700;
+}
+
+.level-up-exam-bar__right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.level-up-exam-bar__timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: var(--level-up-accent);
+  color: #fff;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+}
+
+.level-up-exam-bar__timer--urgent {
+  animation: level-up-pulse 1s ease-in-out infinite;
+}
+
+@keyframes level-up-pulse {
+  50% {
+    filter: brightness(1.12);
+  }
+}
+
+.level-up-exam-bar__help {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--level-up-accent);
+  background: #fff;
+  color: var(--level-up-accent);
+  font-weight: 800;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.level-up-exam-bar__help:hover {
+  background: var(--level-up-accent-soft);
+}
+
+/* --- Hero --- */
+.level-up-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  margin: 1.25rem 0 1.5rem;
+}
+
+.level-up-hero__greeting {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  font-weight: 800;
+}
+
+.level-up-hero__accent {
+  color: var(--level-up-accent);
+}
+
+.level-up-hero__lead,
+.level-up-hero__desc {
+  margin: 0;
+  max-width: 46rem;
+  color: var(--level-up-muted);
+  line-height: 1.55;
+  font-size: 0.95rem;
+}
+
+.level-up-hero__desc {
+  margin-top: 0.5rem;
+}
+
+.level-up-hero__progress {
+  flex-shrink: 0;
+  padding: 0.65rem 1rem;
+  border-radius: var(--level-up-radius);
+  background: var(--level-up-card);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+  border: 1px solid #f1f5f9;
+  text-align: right;
+}
+
+.level-up-hero__progress-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--level-up-muted);
+}
+
+.level-up-hero__progress-value {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+/* --- Lưới nội dung --- */
+.level-up-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .level-up-grid {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+.level-up-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* --- Thẻ câu hỏi --- */
+.level-up-qcard {
+  background: var(--level-up-card);
+  border-radius: var(--level-up-radius);
+  padding: 1rem 1.1rem 1.15rem;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.07);
+  border: 1px solid #f1f5f9;
+}
+
+.level-up-qcard__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.level-up-qcard__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--level-up-accent);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.level-up-qcard__badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--level-up-muted);
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+}
+
+.level-up-qcard__stem {
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.level-up-qcard__points {
+  color: var(--level-up-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.level-up-qcard__opts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.level-up-qcard__opts--grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+@media (max-width: 520px) {
+  .level-up-qcard__opts--grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.level-up-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.level-up-opt:hover {
+  border-color: color-mix(in srgb, var(--level-up-accent) 35%, #e2e8f0);
+  background: #fafafa;
+}
+
+.level-up-opt--checked {
+  border-color: var(--level-up-accent);
+  background: var(--level-up-accent-soft);
+}
+
+.level-up-opt input {
+  margin-top: 0.2rem;
+  accent-color: var(--level-up-accent);
+}
+
+.level-up-opt__key {
+  font-weight: 800;
+  color: var(--level-up-accent);
+  min-width: 1.25rem;
+}
+
+.level-up-opt__text {
+  flex: 1;
+  line-height: 1.45;
+}
+
+/* --- Sidebar --- */
+.level-up-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.level-up-tips {
+  background: var(--level-up-accent);
+  color: #fff;
+  border-radius: var(--level-up-radius);
+  padding: 1rem 1.1rem;
+  outline: none;
+}
+
+.level-up-tips__title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.level-up-tips__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.level-up-info {
+  background: var(--level-up-card);
+  border-radius: var(--level-up-radius);
+  padding: 1rem 1.1rem;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
+.level-up-info__title {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--level-up-muted);
+}
+
+.level-up-info__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.level-up-info__list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.level-up-info__pill {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--level-up-accent-soft);
+  color: var(--level-up-accent);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+/* --- Thanh dưới --- */
+.level-up-bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  padding: 0.65rem 1rem;
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  padding-bottom: max(0.65rem, env(safe-area-inset-bottom));
+  background: color-mix(in srgb, #fff 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -4px 24px rgba(15, 23, 42, 0.06);
+}
+
+.level-up-bottom__hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #1e293b;
+  line-height: 1.45;
+  max-width: 26rem;
+}
+
+.level-up-bottom__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.level-up-bottom__saved {
+  font-size: 0.8125rem;
+  color: #334155;
+  font-weight: 500;
+}
+
+.level-up-bottom__draft {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1px solid #64748b;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.level-up-bottom__draft:hover:not(:disabled) {
+  background: #cbd5e1;
+  border-color: #475569;
+}
+
+.level-up-bottom__draft:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.level-up-bottom__submit {
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--level-up-accent);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.level-up-bottom__submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.level-up-toast {
+  position: fixed;
+  bottom: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(90vw, 420px);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 0.9rem;
+  z-index: 45;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.level-up-toast p {
+  margin: 0;
+}
+
+/* Placement test — khối quy tắc gợi ý level */
+.placement-info__bands {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--level-up-accent);
+  text-align: right;
+}
+
+.placement-info__rule {
+  margin: 0.65rem 0 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid #f1f5f9;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: #334155;
+}
+
+html[data-theme='dark'] .placement-info__rule {
+  border-top-color: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+
+html[data-theme='dark'] .level-up-page {
+  --level-up-card: color-mix(in srgb, var(--bg) 92%, #1e293b);
+  --level-up-muted: #94a3b8;
+}
+
+html[data-theme='dark'] .level-up-qcard,
+html[data-theme='dark'] .level-up-info {
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+html[data-theme='dark'] .level-up-exam-bar__sep {
+  background: rgba(148, 163, 184, 0.35);
+}
+
+html[data-theme='dark'] .level-up-exam-bar__help {
+  background: var(--level-up-card);
+  color: #fda4af;
+  border-color: #fda4af;
+}
+
+html[data-theme='dark'] .level-up-bottom {
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  border-top-color: rgba(148, 163, 184, 0.25);
+}
+
+html[data-theme='dark'] .level-up-bottom__hint {
+  color: #e2e8f0;
+}
+
+html[data-theme='dark'] .level-up-bottom__saved {
+  color: #cbd5e1;
+}
+
+html[data-theme='dark'] .level-up-bottom__draft {
+  background: #334155;
+  border-color: #64748b;
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] .level-up-bottom__draft:hover:not(:disabled) {
+  background: #475569;
+  border-color: #94a3b8;
+}
+
+html[data-theme='dark'] .level-up-opt {
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+html[data-theme='dark'] .level-up-opt:hover {
+  background: rgba(255, 255, 255, 0.04);
+}

@@ -57,6 +57,14 @@ export default function LearnAiWidget({ isAuthenticated }) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, open, busy]);
 
+  useEffect(() => {
+    function onOpenFromBanner() {
+      setOpen(true);
+    }
+    window.addEventListener('yume-open-learn-ai', onOpenFromBanner);
+    return () => window.removeEventListener('yume-open-learn-ai', onOpenFromBanner);
+  }, []);
+
   const clearAttachments = useCallback(() => {
     setImagePreviews((prev) => {
       prev.forEach((p) => URL.revokeObjectURL(p.url));
