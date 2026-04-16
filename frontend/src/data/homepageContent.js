@@ -77,18 +77,24 @@ export const HOMEPAGE_TESTIMONIALS = {
       level: 'Học viên N5',
       quote:
         'Lộ trình N5 rất dễ theo dõi, mỗi ngày mình học một ít nhưng vẫn thấy tiến bộ đều.',
+      avatarUrl:
+        'https://lh3.googleusercontent.com/aida-public/AB6AXuB96mZjhhtdBCO82VL2lwW_fxJea65qRxit1ZsWKRUM_ipNoBom2zifSBLvfcqsCTEqflSwvUcj5mbUwCt6wO-kllK6NYzEwKI2kch8B7piII53Lb5KbCSlrH4Octx3SXCmwCa1Mdq9U2O4WgFR5MzAnXQ1lVO1lev20MRljekd9EhjRKvzTDILAe64D7-hBwH_fYOl31cR725pw61NBnjDU2DCepbc_xpb-eRmhq8xax_ReTUPITqLx2E2FrEym6NPkJzR1Shp65w',
     },
     {
       name: 'Hoàng Nam',
       level: 'Học viên N3',
       quote:
         'Lớp luyện nói giúp mình tự tin giao tiếp hơn trong công việc. Mình tiến bộ rõ chỉ sau vài tháng.',
+      avatarUrl:
+        'https://lh3.googleusercontent.com/aida-public/AB6AXuCxt1q_dgTjyweQg_C11KrtpRFMhWMpoApdLWhJw-o4dctjQ7H4B3AU6s4UXb9OUALSs1MXAT2fXkY7GR9amLSm-9YC4xcASzmAMsSAjGM46zKqbSmhyK6xm7mRsQgWgB_9kELFfIb7uqLvazvRdY1JK7zcLXCb94ss7RuPm6b5chtCx-Jr8F7RNz3i_hyy3c7N-1dc7b6IBo7LFaA9ElfebynUcg7vaEr4QlbJE6N_BIWL3MqQU1gR67BNTD8Dt-0GC4UurfaLfh8',
     },
     {
       name: 'Thu Thảo',
       level: 'Học viên N4',
       quote:
         'Nội dung N4 được sắp theo tuần rất rõ ràng, học xong là mình ôn lại được ngay.',
+      avatarUrl:
+        'https://lh3.googleusercontent.com/aida-public/AB6AXuD4VoxO11xGzajOEu5GGSNohEyz0nApGunVra-g2RGGqss_cRjnB6u9doLyiywIbTTHKaYS8mJegquffQDY_xUOTetEjB5z9xy8Etl_w8wZpDVRMDaEEDpFdneo_ZPRoRnj7ihgRXPIzXy2KFfFcu70L2c1AOEwCEV6vJmaApkuQbPplmYTw3cBYuc8PiLPEhbegA6Pg_r9pZYwVwqLCwaYjaqhZLil7lF_WrcdvzF2jTaDYoGHKt-lYb46k_wxT9ruufshbIxnvro',
     },
   ],
 };

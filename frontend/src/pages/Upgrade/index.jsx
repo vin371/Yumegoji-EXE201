@@ -1,8 +1,40 @@
 import { useEffect, useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../../data/routes';
 import { useAuth } from '../../hooks/useAuth';
 import { paymentService } from '../../services/paymentService';
+import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
+
+/** Alias để ESLint nhận diện biến dùng qua JSX. */
+const Motion = motion;
+
+const PREMIUM_SPARKLE_LAYOUT = [
+  { top: '10%', left: '11%' },
+  { top: '19%', right: '16%' },
+  { top: '36%', left: '7%' },
+  { top: '54%', right: '11%' },
+  { top: '71%', left: '20%' },
+];
+
+const plansContainer = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.16, delayChildren: 0.08 },
+  },
+};
+
+const planCard = {
+  hidden: { opacity: 0, y: 40 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: 'spring', stiffness: 300, damping: 28 },
+  },
+};
+
+const btnHoverLift = { y: -3, transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } };
+const btnTap = { scale: 0.985, transition: { duration: 0.12 } };
 
 function fmtVnd(n) {
   const x = Number(n);
@@ -34,6 +66,7 @@ const PREMIUM_FEATURES = [
 ];
 
 export default function UpgradePage() {
+  const reduceMotion = useReducedMotion();
   const { user } = useAuth();
   const [config, setConfig] = useState(null);
   const [intent, setIntent] = useState(null);
@@ -119,6 +152,7 @@ export default function UpgradePage() {
 
   return (
     <div className="upgrade-page upgrade-page--sakura">
+      <SakuraRainLayer />
       <div className="upgrade-page__decor upgrade-page__decor--tl" aria-hidden />
       <div className="upgrade-page__decor upgrade-page__decor--br" aria-hidden />
 
@@ -135,8 +169,17 @@ export default function UpgradePage() {
       {err ? <p className="upgrade-page__err">{err}</p> : null}
       {msg ? <p className="upgrade-page__ok">{msg}</p> : null}
 
-      <section className="upgrade-page__plans" aria-label="So sánh gói Free và Premium">
-        <article className={`upgrade-card upgrade-card--free ${!isPremium ? 'upgrade-card--current' : ''}`}>
+      <Motion.section
+        className="upgrade-page__plans"
+        aria-label="So sánh gói Free và Premium"
+        variants={plansContainer}
+        initial={reduceMotion ? false : 'hidden'}
+        animate="visible"
+      >
+        <Motion.article
+          className={`upgrade-card upgrade-card--free ${!isPremium ? 'upgrade-card--current' : ''}`}
+          variants={reduceMotion ? undefined : planCard}
+        >
           <div className="upgrade-card__ribbon">Gói Miễn phí</div>
           <h2 className="upgrade-card__name">Free</h2>
           <p className="upgrade-card__price">
@@ -152,12 +195,45 @@ export default function UpgradePage() {
               </li>
             ))}
           </ul>
-          <button type="button" className="upgrade-card__btn" disabled>
-            {!isPremium ? 'Gói hiện tại' : 'Không phải gói này'}
-          </button>
-        </article>
+          <Motion.div className="upgrade-card__btn-touch" whileHover={btnHoverLift} whileTap={btnTap}>
+            <button type="button" className="upgrade-card__btn" disabled>
+              {!isPremium ? 'Gói hiện tại' : 'Không phải gói này'}
+            </button>
+          </Motion.div>
+        </Motion.article>
 
-        <article className={`upgrade-card upgrade-card--premium ${isPremium ? 'upgrade-card--current' : ''}`}>
+        <Motion.article
+          className={`upgrade-card upgrade-card--premium ${isPremium ? 'upgrade-card--current' : ''}`}
+          variants={reduceMotion ? undefined : planCard}
+        >
+          <div className="upgrade-card__sparkles" aria-hidden>
+            {PREMIUM_SPARKLE_LAYOUT.map((pos, i) =>
+              reduceMotion ? (
+                <span key={i} className="upgrade-card__sparkle upgrade-card__sparkle--static" style={pos}>
+                  ✦
+                </span>
+              ) : (
+                <Motion.span
+                  key={i}
+                  className="upgrade-card__sparkle"
+                  style={pos}
+                  initial={{ opacity: 0.35, scale: 0.85 }}
+                  animate={{
+                    opacity: [0.35, 1, 0.45, 0.95, 0.4],
+                    scale: [0.85, 1.15, 0.9, 1.08, 0.88],
+                  }}
+                  transition={{
+                    duration: 2.4 + i * 0.35,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                    delay: i * 0.22,
+                  }}
+                >
+                  ✦
+                </Motion.span>
+              ),
+            )}
+          </div>
           <div className="upgrade-card__badge">Ưu đãi nhất</div>
           <div className="upgrade-card__ribbon upgrade-card__ribbon--gold">Gói Cao cấp (Premium)</div>
           <h2 className="upgrade-card__name upgrade-card__name--gold">Premium</h2>
@@ -176,16 +252,18 @@ export default function UpgradePage() {
               </li>
             ))}
           </ul>
-          <button
-            type="button"
-            className="upgrade-card__btn upgrade-card__btn--gold"
-            onClick={onCreateIntent}
-            disabled={!canBuy || creating}
-          >
-            {isPremium ? 'Gói hiện tại' : creating ? 'Đang tạo mã…' : 'Nâng cấp Premium'}
-          </button>
-        </article>
-      </section>
+          <Motion.div className="upgrade-card__btn-touch" whileHover={btnHoverLift} whileTap={btnTap}>
+            <button
+              type="button"
+              className="upgrade-card__btn upgrade-card__btn--gold"
+              onClick={onCreateIntent}
+              disabled={!canBuy || creating}
+            >
+              {isPremium ? 'Gói hiện tại' : creating ? 'Đang tạo mã…' : 'Nâng cấp Premium'}
+            </button>
+          </Motion.div>
+        </Motion.article>
+      </Motion.section>
 
       {!isPremium && intent ? (
         <section className="upgrade-pay" aria-labelledby="upgrade-pay-title">
@@ -217,24 +295,17 @@ export default function UpgradePage() {
           </div>
 
           <div className="upgrade-pay__actions">
-            <button type="button" className="upgrade-card__btn upgrade-card__btn--gold" onClick={onConfirmPaid} disabled={confirming}>
-              {confirming ? 'Đang gửi…' : 'Tôi đã thanh toán'}
-            </button>
+            <Motion.div className="upgrade-pay__btn-touch" whileHover={{ y: -2 }} whileTap={{ scale: 0.99 }}>
+              <button type="button" className="upgrade-card__btn upgrade-card__btn--gold" onClick={onConfirmPaid} disabled={confirming}>
+                {confirming ? 'Đang gửi…' : 'Tôi đã thanh toán'}
+              </button>
+            </Motion.div>
             <Link className="upgrade-page__back" to={ROUTES.DASHBOARD}>
               ← Về Dashboard
             </Link>
           </div>
         </section>
       ) : null}
-
-      <section className="upgrade-page__explain" aria-label="Cách hệ thống phân biệt Free và Premium">
-        <h3 className="upgrade-page__explain-title">Phân biệt tài khoản</h3>
-        <p>
-          Hệ thống lưu cờ <strong>is_premium</strong> trên tài khoản (đồng bộ khi đăng nhập). Khi admin duyệt thanh toán Premium, cờ được bật — bạn
-          có thể cần đăng nhập lại để thấy nút &quot;Gói hiện tại&quot; cập nhật. Free: giới hạn lượt chơi/ngày, không PvP, bài học Premium bị
-          khóa; Premium: bỏ giới hạn đó và mở đủ nội dung theo gói.
-        </p>
-      </section>
     </div>
   );
 }

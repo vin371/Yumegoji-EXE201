@@ -1,5 +1,61 @@
 /* Trang Upgrade — layout kiểu so sánh gói (sakura / vàng Premium), tương thích dark theme */
 
+@keyframes upgrade-premium-glow-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(250, 204, 21, 0.18),
+      0 16px 48px rgba(0, 0, 0, 0.26),
+      0 0 32px rgba(251, 191, 36, 0.12);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(250, 204, 21, 0.38),
+      0 18px 56px rgba(0, 0, 0, 0.3),
+      0 0 52px rgba(253, 224, 71, 0.32);
+  }
+}
+
+.upgrade-card--premium {
+  animation: upgrade-premium-glow-pulse 3.6s ease-in-out infinite;
+}
+
+.upgrade-card__sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.upgrade-card__sparkle {
+  position: absolute;
+  font-size: 0.65rem;
+  line-height: 1;
+  color: rgba(253, 224, 71, 0.95);
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.9);
+  user-select: none;
+}
+
+.upgrade-card__sparkle--static {
+  opacity: 0.72;
+}
+
+.upgrade-card__btn-touch {
+  width: 100%;
+  margin-top: auto;
+}
+
+.upgrade-card__btn-touch .upgrade-card__btn {
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upgrade-card--premium {
+    animation: none;
+  }
+}
+
 .upgrade-page--sakura {
   position: relative;
   max-width: 1100px;
@@ -47,7 +103,7 @@
 
 .upgrade-page__hero {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   text-align: center;
   margin-bottom: 1.5rem;
 }
@@ -104,7 +160,7 @@
 
 .upgrade-page__plans {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.25rem;
@@ -114,6 +170,9 @@
 
 .upgrade-card {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   background: color-mix(in srgb, var(--bg, #1e293b) 94%, #fff 6%);
   border: 1px solid var(--border, #334155);
   border-radius: 18px;
@@ -126,12 +185,12 @@
 }
 
 .upgrade-card--premium {
-  border-color: rgba(234, 179, 8, 0.45);
-  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.15), 0 16px 48px rgba(0, 0, 0, 0.28);
+  border-color: rgba(234, 179, 8, 0.55);
 }
 
 .upgrade-card--current {
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.35) inset;
+  outline: 2px solid rgba(34, 197, 94, 0.42);
+  outline-offset: -2px;
 }
 
 .upgrade-card__badge {
@@ -209,11 +268,13 @@
 }
 
 .upgrade-card__features {
+  flex: 1 1 auto;
   margin: 0 0 1.1rem;
   padding: 0;
   list-style: none;
   display: grid;
   gap: 0.45rem;
+  align-content: start;
 }
 
 .upgrade-card__features li {
@@ -254,10 +315,19 @@
   color: var(--text-h, #f1f5f9);
   font-weight: 700;
   cursor: not-allowed;
+  transition:
+    filter 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .upgrade-card__btn:not(:disabled) {
   cursor: pointer;
+}
+
+.upgrade-card__btn:not(:disabled):hover {
+  filter: brightness(1.06);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.2);
 }
 
 .upgrade-card__btn--gold:not(:disabled) {
@@ -267,10 +337,18 @@
   box-shadow: 0 8px 24px rgba(217, 119, 6, 0.35);
 }
 
+.upgrade-card__btn--gold:not(:disabled):hover {
+  box-shadow: 0 10px 28px rgba(217, 119, 6, 0.48);
+}
+
 .upgrade-card__btn--gold:disabled {
-  opacity: 0.85;
+  opacity: 0.88;
   cursor: not-allowed;
-  filter: grayscale(0.15);
+  filter: grayscale(0.12);
+}
+
+.upgrade-card__btn-touch:hover .upgrade-card__btn:disabled {
+  filter: grayscale(0.06) brightness(1.04);
 }
 
 .upgrade-pay {
@@ -326,27 +404,13 @@
   align-items: center;
 }
 
+.upgrade-pay__btn-touch {
+  display: inline-flex;
+}
+
 .upgrade-page__back {
   color: var(--text);
   font-weight: 600;
-}
-
-.upgrade-page__explain {
-  position: relative;
-  z-index: 1;
-  margin-top: 1.75rem;
-  padding: 1rem 1.1rem;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--bg, #0f172a) 88%, #38bdf8 12%);
-  border: 1px dashed color-mix(in srgb, var(--border, #475569) 80%, #94a3b8 20%);
-  font-size: 0.88rem;
-  line-height: 1.55;
-  color: color-mix(in srgb, var(--text, #cbd5e1) 96%, #94a3b8 4%);
-}
-
-.upgrade-page__explain-title {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
 }
 
 @media (max-width: 900px) {

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
 import SpeakJaButton from '../../components/learn/SpeakJaButton';
+import { PlayGameSetupPro } from '../../components/play/PlayGameSetupPro';
+import { playSetupChildVariants, playSetupParentVariants } from '../../components/play/playSetupMotion';
 import { ROUTES } from '../../data/routes';
 import { buildLocalKanaQuestions } from '../../data/gojuonRomaji';
 import {
@@ -18,6 +21,123 @@ import {
   submitGameAnswer,
   postInventoryPowerUp,
 } from '../../services/gameService';
+
+const Motion = motion;
+
+function splitSetupTitleAccent(setupTitle) {
+  const parts = String(setupTitle || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!parts.length) return { lead: '', accent: 'Game' };
+  if (parts.length === 1) return { lead: '', accent: parts[0] };
+  const accent = parts[parts.length - 1];
+  const lead = parts.slice(0, -1).join(' ');
+  return { lead, accent };
+}
+
+function getQuestionFieldLabel(apiGameSlug, isFlash) {
+  if (apiGameSlug === 'vocabulary-speed-quiz') {
+    return 'Số câu trong phiên (từ vựng ưu tiên từ các bài học bạn đã có tiến độ)';
+  }
+  if (apiGameSlug === 'sentence-builder') {
+    return 'Số câu trong phiên (kéo thả từ — khoảng 75 giây mỗi câu)';
+  }
+  if (apiGameSlug === 'daily-challenge') {
+    return 'Số câu trong phiên (tối thiểu 5 — trắc nghiệm đọc Kanji/từ vựng)';
+  }
+  if (apiGameSlug === 'counter-quest') {
+    return 'Số câu trong phiên (ưu tiên quiz trợ từ trong bài học; thiếu thì dùng bộ đề server)';
+  }
+  if (apiGameSlug === 'boss-battle') {
+    return 'Số câu trong phiên (ưu tiên từ vựng/kanji bài học; thiếu thì dùng bộ đề server)';
+  }
+  if (isFlash) {
+    return 'Số câu trong phiên (ưu tiên từ vựng bài học; thiếu thì dùng bộ đề server)';
+  }
+  return `Số lượng câu hỏi (tối đa ${MAX_KANA_QUESTIONS})`;
+}
+
+function getSetupShortIntro(apiGameSlug, kanaGame, isFlash) {
+  if (kanaGame) {
+    return 'Kiểm tra khả năng phản xạ và ghi nhớ bảng chữ cái Hiragana/Katakana qua thử thách ghép đôi romaji đầy kịch tính.';
+  }
+  if (apiGameSlug === 'vocabulary-speed-quiz') {
+    return 'Trắc nghiệm từ vựng tốc độ cao — câu hỏi ưu tiên từ các bài học bạn đã mở trong lộ trình.';
+  }
+  if (apiGameSlug === 'sentence-builder') {
+    return 'Kéo thả các mảnh từ để ghép thành câu đúng — mỗi câu có ngân hàng từ và ô chỗ trống rõ ràng.';
+  }
+  if (apiGameSlug === 'daily-challenge') {
+    return 'Bộ đề Daily trên server — trắc nghiệm Kanji và từ vựng, phù hợp ôn nhanh mỗi ngày.';
+  }
+  if (apiGameSlug === 'counter-quest') {
+    return 'Trợ từ đếm trong tiếng Nhật — ưu tiên câu quiz gắn với bài học bạn đang học.';
+  }
+  if (apiGameSlug === 'boss-battle') {
+    return 'Đối đầu boss HP — câu hỏi lấy từ từ vựng & kanji các bài học đã xuất bản.';
+  }
+  if (isFlash) {
+    return 'Flashcard Battle — câu hỏi từ vựng bài học, đấu với bot mô phỏng.';
+  }
+  return 'Sẵn sàng cho thử thách — đọc kỹ gợi ý dưới đây trước khi bắt đầu phiên.';
+}
+
+function getSetupFeatureRows(apiGameSlug, kanaGame, isFlash) {
+  if (kanaGame) {
+    return [
+      {
+        icon: '⏱',
+        title: '10 giây mỗi câu',
+        desc: 'Phải chọn romaji đúng trước khi đồng hồ về 0 — luyện phản xạ đọc bảng chữ.',
+      },
+      {
+        icon: '★',
+        title: 'Tính điểm linh hoạt',
+        desc: 'Chơi qua API: theo cấu hình server; luyện offline: tối đa 100 điểm theo tỉ lệ đúng / tổng câu.',
+      },
+    ];
+  }
+  if (apiGameSlug === 'vocabulary-speed-quiz') {
+    return [
+      { icon: '⏱', title: '8 giây mỗi câu', desc: 'Đồng hồ client cố định 8s; điểm tốc độ theo thời gian trả lời.' },
+      { icon: '📚', title: 'Từ vựng bài học', desc: 'Ưu tiên từ các bài bạn đã có tiến độ; thiếu thì bổ sung từ khoá học.' },
+    ];
+  }
+  if (apiGameSlug === 'sentence-builder') {
+    return [
+      { icon: '🧩', title: 'Kéo thả từ', desc: 'Mỗi câu ~75 giây — sắp xếp chip thành câu đúng thứ tự.' },
+      { icon: '✓', title: 'Theo bài học', desc: 'Câu hỏi gắn với nội dung đã xuất bản trên lộ trình.' },
+    ];
+  }
+  if (apiGameSlug === 'daily-challenge') {
+    return [
+      { icon: '📅', title: 'Daily Challenge', desc: 'Tối thiểu 5 câu; bộ đề random từ kho server mỗi phiên.' },
+      { icon: '漢', title: 'Kanji & từ vựng', desc: 'Trắc nghiệm đọc hiểu ngắn, phù hợp ôn nhanh.' },
+    ];
+  }
+  if (apiGameSlug === 'counter-quest') {
+    return [
+      { icon: '🔢', title: 'Trợ từ đếm', desc: 'Quiz 4 đáp án — ưu tiên câu trong bài học của bạn.' },
+      { icon: '⚡', title: 'EXP & Xu', desc: 'Ghi nhận qua API khi hoàn thành phiên hợp lệ.' },
+    ];
+  }
+  if (apiGameSlug === 'boss-battle') {
+    return [
+      { icon: '👹', title: 'Boss HP', desc: 'HP chia theo số câu; trả lời đúng để gây sát thương.' },
+      { icon: '📖', title: 'Từ vựng & Kanji', desc: 'Ưu tiên bài học gần đây; thiếu dữ liệu thì dùng đề dự phòng server.' },
+    ];
+  }
+  if (isFlash) {
+    return [
+      { icon: '🃏', title: 'Flashcard Battle', desc: 'Bot mô phỏng đối thủ — câu hỏi từ từ vựng bài học.' },
+      { icon: '⚡', title: 'Tốc độ', desc: 'Giữ combo và độ chính xác để vượt điểm bot.' },
+    ];
+  }
+  return [
+    { icon: '🎮', title: 'Mẹo', desc: 'Đọc phần chi tiết phía dưới rồi nhấn Bắt đầu khi đã sẵn sàng.' },
+  ];
+}
 
 function prettyTitleFromSlug(slug) {
   const s = String(slug || '').trim();
@@ -269,6 +389,7 @@ export default function KanaMatchGame() {
   const [gameMeta, setGameMeta] = useState(null);
   const [apiCorrectCount, setApiCorrectCount] = useState(0);
   const apiCorrectRef = useRef(0);
+  const reduceMotion = useReducedMotion();
 
   const apiGameSlug = useMemo(
     () => String(gameSlug || '').replace(/_/g, '-').toLowerCase(),
@@ -877,121 +998,189 @@ export default function KanaMatchGame() {
     const setupShell = useArcadeShell
       ? `play-game play-game--setup play-game--arcade play-arcade--${arcadeTheme}`
       : 'play-game play-game--setup';
+    const hasQSelect =
+      kanaGame ||
+      apiGameSlug === 'vocabulary-speed-quiz' ||
+      apiGameSlug === 'sentence-builder' ||
+      apiGameSlug === 'daily-challenge' ||
+      apiGameSlug === 'counter-quest' ||
+      apiGameSlug === 'boss-battle' ||
+      isFlashcardBattleSlug(apiGameSlug);
+    const isFlash = isFlashcardBattleSlug(apiGameSlug);
+    const { lead, accent } = splitSetupTitleAccent(setupTitle);
+    const parentV = playSetupParentVariants(!!reduceMotion);
+    const childV = playSetupChildVariants(!!reduceMotion);
+    const features = getSetupFeatureRows(apiGameSlug, kanaGame, isFlash);
+    const intro = getSetupShortIntro(apiGameSlug, kanaGame, isFlash);
+    const qFieldLabel = getQuestionFieldLabel(apiGameSlug, isFlash);
+
     return (
-      <div className={setupShell}>
-        <header className={useArcadeShell ? 'play-arcade__setup-head' : 'play-game__head'}>
-          <Link className={useArcadeShell ? 'play-arcade__back' : 'play-game__back'} to={ROUTES.PLAY}>
-            {useArcadeShell ? '← Quay lại' : '← Trò chơi'}
-          </Link>
-          <h1 className={useArcadeShell ? 'play-arcade__setup-title' : 'play-game__title'}>{setupTitle}</h1>
-        </header>
-        {kanaGame ||
-        apiGameSlug === 'vocabulary-speed-quiz' ||
-        apiGameSlug === 'sentence-builder' ||
-        apiGameSlug === 'daily-challenge' ||
-        apiGameSlug === 'counter-quest' ||
-        apiGameSlug === 'boss-battle' ||
-        isFlashcardBattleSlug(apiGameSlug) ? (
-          <div className="play-game__setup-field">
-            <label htmlFor="play-kana-qcount">
-              {apiGameSlug === 'vocabulary-speed-quiz'
-                ? 'Số câu trong phiên (từ vựng ưu tiên từ các bài học bạn đã có tiến độ)'
-                : apiGameSlug === 'sentence-builder'
-                  ? 'Số câu trong phiên (kéo thả từ — khoảng 75 giây mỗi câu)'
-                  : apiGameSlug === 'daily-challenge'
-                    ? 'Số câu trong phiên (tối thiểu 5 — trắc nghiệm đọc Kanji/từ vựng)'
-                    : apiGameSlug === 'counter-quest'
-                      ? 'Số câu trong phiên (ưu tiên quiz trợ từ trong bài học; thiếu thì dùng bộ đề server)'
-                      : apiGameSlug === 'boss-battle'
-                        ? 'Số câu trong phiên (ưu tiên từ vựng/kanji bài học; thiếu thì dùng bộ đề server)'
-                        : isFlashcardBattleSlug(apiGameSlug)
-                          ? 'Số câu trong phiên (ưu tiên từ vựng bài học; thiếu thì dùng bộ đề server)'
-                          : `Số câu trong phiên (tối đa ${MAX_KANA_QUESTIONS})`}
-            </label>
-            <select
-              id="play-kana-qcount"
-              value={questionCount}
-              onChange={(e) => setQuestionCount(Number(e.target.value))}
-            >
-              {(apiGameSlug === 'vocabulary-speed-quiz'
-                ? VOCAB_SPEED_Q_CHOICES
-                : apiGameSlug === 'sentence-builder'
-                  ? SENTENCE_BUILDER_Q_CHOICES
-                  : apiGameSlug === 'daily-challenge'
-                    ? DAILY_CHALLENGE_Q_CHOICES
-                    : apiGameSlug === 'counter-quest'
-                      ? COUNTER_QUEST_Q_CHOICES
-                      : apiGameSlug === 'boss-battle'
-                        ? BOSS_BATTLE_Q_CHOICES
-                        : isFlashcardBattleSlug(apiGameSlug)
-                          ? FLASHCARD_BATTLE_Q_CHOICES
-                          : QUESTION_COUNT_CHOICES
-              ).map((n) => (
-                <option key={n} value={n}>
-                  {n} câu
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : (
-          <p className="play-game__setup-hint">
-            Game này chỉ chơi qua API — số câu và bộ đề do server. Nếu lỗi, kiểm tra đã seed{' '}
-            <code>game_question_sets</code> / <code>game_questions</code> cho slug <code>{apiGameSlug}</code> (URL có thể
-            dùng <code>_</code>, API tự đổi sang <code>-</code>).
-          </p>
-        )}
-        <p className="play-game__setup-hint">
-          {kanaGame ? (
-            <>
-              <strong>10 giây</strong> mỗi câu (Hiragana/Katakana). Khi chơi qua API, đồng hồ hiển thị cũng dùng 10s theo
-              đặc tả; điểm tốc độ phía server vẫn tính theo cấu hình DB. Khi luyện offline: điểm tối đa{' '}
-              <strong>100</strong> theo tỷ lệ đúng/tổng câu.
-            </>
+      <PlayGameSetupPro>
+        <Motion.div
+          className={`${setupShell} play-setup-pro__content`}
+          variants={parentV}
+          initial={reduceMotion ? false : 'hidden'}
+          animate="show"
+        >
+          <Motion.header variants={childV} className="play-setup-pro__head">
+            <Link className="play-setup-pro__back" to={ROUTES.PLAY}>
+              ← Trò chơi
+            </Link>
+            <h1 className="play-setup-pro__title">
+              {lead ? <span className="play-setup-pro__title-part">{lead} </span> : null}
+              <span className="play-setup-pro__title-accent">{accent}</span>
+            </h1>
+          </Motion.header>
+
+          {hasQSelect ? (
+            <Motion.div variants={childV} className="play-setup-pro__grid">
+              <section className="play-setup-pro__info-card">
+                <p className="play-setup-pro__lead">{intro}</p>
+                <ul className="play-setup-pro__features">
+                  {features.map((f) => (
+                    <li key={f.title} className="play-setup-pro__feature">
+                      <span className="play-setup-pro__feature-ico" aria-hidden>
+                        {f.icon}
+                      </span>
+                      <div>
+                        <div className="play-setup-pro__feature-title">{f.title}</div>
+                        <div className="play-setup-pro__feature-desc">{f.desc}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+              <section className="play-setup-pro__config-card">
+                <div className="play-setup-pro__config-title">
+                  <span className="play-setup-pro__config-gear" aria-hidden>
+                    ⚙
+                  </span>
+                  Cấu hình lượt chơi
+                </div>
+                <div className="play-game__setup-field play-setup-pro__field">
+                  <label htmlFor="play-kana-qcount">{qFieldLabel}</label>
+                  <select
+                    id="play-kana-qcount"
+                    value={questionCount}
+                    onChange={(e) => setQuestionCount(Number(e.target.value))}
+                  >
+                    {(apiGameSlug === 'vocabulary-speed-quiz'
+                      ? VOCAB_SPEED_Q_CHOICES
+                      : apiGameSlug === 'sentence-builder'
+                        ? SENTENCE_BUILDER_Q_CHOICES
+                        : apiGameSlug === 'daily-challenge'
+                          ? DAILY_CHALLENGE_Q_CHOICES
+                          : apiGameSlug === 'counter-quest'
+                            ? COUNTER_QUEST_Q_CHOICES
+                            : apiGameSlug === 'boss-battle'
+                              ? BOSS_BATTLE_Q_CHOICES
+                              : isFlash
+                                ? FLASHCARD_BATTLE_Q_CHOICES
+                                : QUESTION_COUNT_CHOICES
+                    ).map((n) => (
+                      <option key={n} value={n}>
+                        {n} câu
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {kanaGame ? (
+                  <div className="play-setup-pro__modes" role="group" aria-label="Chọn bảng chữ">
+                    <Link
+                      to={`${ROUTES.PLAY}/hiragana-match`}
+                      className={`play-setup-pro__mode${apiGameSlug === 'hiragana-match' ? ' play-setup-pro__mode--active' : ''}`}
+                    >
+                      Hiragana
+                    </Link>
+                    <Link
+                      to={`${ROUTES.PLAY}/katakana-match`}
+                      className={`play-setup-pro__mode${apiGameSlug === 'katakana-match' ? ' play-setup-pro__mode--active' : ''}`}
+                    >
+                      Katakana
+                    </Link>
+                  </div>
+                ) : null}
+              </section>
+            </Motion.div>
           ) : (
-            <>
-              Lần đầu vào game, server có thể <strong>cấp túi đồ mở đầu</strong> nếu bạn chưa có vật phẩm — sau đó dùng
-              thanh power-up khi chơi API.{' '}
-              {apiGameSlug === 'sentence-builder' ? (
+            <Motion.p variants={childV} className="play-game__setup-hint play-setup-pro__hint-block">
+              Game này chỉ chơi qua API — số câu và bộ đề do server. Nếu lỗi, kiểm tra đã seed{' '}
+              <code>game_question_sets</code> / <code>game_questions</code> cho slug <code>{apiGameSlug}</code> (URL có
+              thể dùng <code>_</code>, API tự đổi sang <code>-</code>).
+            </Motion.p>
+          )}
+
+          <Motion.div variants={childV} className="play-setup-pro__rules">
+            <p className="play-game__setup-hint play-setup-pro__hint-tight">
+              {kanaGame ? (
                 <>
-                  <strong>Sentence Builder</strong>: số câu mỗi phiên do bạn chọn ở trên; mỗi câu sắp xếp các mảnh từ
-                  thành đúng thứ tự.
-                </>
-              ) : apiGameSlug === 'daily-challenge' ? (
-                <>
-                  <strong>Daily Challenge</strong>: số câu mỗi phiên do bạn chọn ở trên (tối thiểu 5); câu hỏi lấy ngẫu
-                  nhiên trong bộ đề daily trên server.
-                </>
-              ) : apiGameSlug === 'counter-quest' ? (
-                <>
-                  <strong>Counter Quest</strong>: server ưu tiên câu trắc nghiệm <strong>quiz trong bài học</strong> (4
-                  đáp án ngắn, gợi ý trợ từ đếm). Thêm hoặc sửa nội dung qua trang quản trị bài học; nếu chưa đủ câu phù
-                  hợp thì dùng bộ đề có sẵn trên SQL.
-                </>
-              ) : isFlashcardBattleSlug(apiGameSlug) ? (
-                <>
-                  <strong>Flashcard Battle</strong>: câu hỏi lấy từ <strong>từ vựng các bài học</strong> (giống Vocabulary
-                  Speed); bot vẫn mô phỏng tỷ lệ đúng như trước. Cập nhật từ vựng trong bài học hoặc chạy patch SQL để có
-                  thêm câu dự phòng.
-                </>
-              ) : apiGameSlug === 'boss-battle' ? (
-                <>
-                  <strong>Boss Battle</strong>: câu hỏi lấy từ <strong>từ vựng &amp; kanji bài học</strong> (ưu tiên bài
-                  bạn đã mở gần đây); HP boss chia theo số câu. Thiếu dữ liệu bài học thì dùng bộ đề server (patch SQL).
+                  <strong>10 giây</strong> mỗi câu (Hiragana/Katakana). Khi chơi qua API, đồng hồ hiển thị cũng dùng 10s
+                  theo đặc tả; điểm tốc độ phía server vẫn tính theo cấu hình DB. Khi luyện offline: điểm tối đa{' '}
+                  <strong>100</strong> theo tỷ lệ đúng/tổng câu.
                 </>
               ) : (
                 <>
-                  <strong>Vocabulary Speed Quiz</strong>: đồng hồ client <strong>8 giây</strong>/câu; câu hỏi lấy từ{' '}
-                  <strong>từ vựng bài học</strong> (bài đã có trong tiến độ của bạn), thiếu thì bổ sung từ khoá học đã
-                  xuất bản.
+                  Lần đầu vào game, server có thể <strong>cấp túi đồ mở đầu</strong> nếu bạn chưa có vật phẩm — sau đó
+                  dùng thanh power-up khi chơi API.{' '}
+                  {apiGameSlug === 'sentence-builder' ? (
+                    <>
+                      <strong>Sentence Builder</strong>: số câu mỗi phiên do bạn chọn ở trên; mỗi câu sắp xếp các mảnh từ
+                      thành đúng thứ tự.
+                    </>
+                  ) : apiGameSlug === 'daily-challenge' ? (
+                    <>
+                      <strong>Daily Challenge</strong>: số câu mỗi phiên do bạn chọn ở trên (tối thiểu 5); câu hỏi lấy
+                      ngẫu nhiên trong bộ đề daily trên server.
+                    </>
+                  ) : apiGameSlug === 'counter-quest' ? (
+                    <>
+                      <strong>Counter Quest</strong>: server ưu tiên câu trắc nghiệm <strong>quiz trong bài học</strong>{' '}
+                      (4 đáp án ngắn, gợi ý trợ từ đếm). Thêm hoặc sửa nội dung qua trang quản trị bài học; nếu chưa đủ
+                      câu phù hợp thì dùng bộ đề có sẵn trên SQL.
+                    </>
+                  ) : isFlash ? (
+                    <>
+                      <strong>Flashcard Battle</strong>: câu hỏi lấy từ <strong>từ vựng các bài học</strong> (giống
+                      Vocabulary Speed); bot vẫn mô phỏng tỷ lệ đúng như trước. Cập nhật từ vựng trong bài học hoặc chạy
+                      patch SQL để có thêm câu dự phòng.
+                    </>
+                  ) : apiGameSlug === 'boss-battle' ? (
+                    <>
+                      <strong>Boss Battle</strong>: câu hỏi lấy từ <strong>từ vựng &amp; kanji bài học</strong> (ưu tiên
+                      bài bạn đã mở gần đây); HP boss chia theo số câu. Thiếu dữ liệu bài học thì dùng bộ đề server (patch
+                      SQL).
+                    </>
+                  ) : (
+                    <>
+                      <strong>Vocabulary Speed Quiz</strong>: đồng hồ client <strong>8 giây</strong>/câu; câu hỏi lấy từ{' '}
+                      <strong>từ vựng bài học</strong> (bài đã có trong tiến độ của bạn), thiếu thì bổ sung từ khoá học
+                      đã xuất bản.
+                    </>
+                  )}
                 </>
               )}
-            </>
-          )}
-        </p>
-        <button type="button" className="play-btn play-btn--primary" onClick={() => beginGame()}>
-          Bắt đầu
-        </button>
-      </div>
+            </p>
+          </Motion.div>
+
+          <Motion.div variants={childV}>
+            <Motion.button
+              type="button"
+              className="play-setup-pro__start play-btn play-btn--primary"
+              onClick={() => beginGame()}
+              whileHover={reduceMotion ? undefined : { scale: 1.02, y: -1 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+            >
+              Bắt đầu <span aria-hidden>▶</span>
+            </Motion.button>
+          </Motion.div>
+
+          <Motion.section variants={childV} className="play-setup-pro__banner" aria-label="Cảm hứng học tập">
+            <div className="play-setup-pro__banner-media" />
+            <p className="play-setup-pro__banner-cap">Cảm hứng học tập từ thiên nhiên</p>
+          </Motion.section>
+        </Motion.div>
+      </PlayGameSetupPro>
     );
   }
 

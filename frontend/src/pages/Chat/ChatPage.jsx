@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion as motionFr, useReducedMotion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
 import { MojiChatLayout } from '../../components/chat/MojiChatLayout';
 import { chatService } from '../../services/chatService';
 import { notifyChatInboxRevised } from '../../hooks/useChatUnreadTotal';
@@ -36,8 +38,82 @@ function typeMeta(typeRaw) {
 const CHAT_LOBBY_HERO_IMAGE =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuCiqI13wPsSaedqBDW5YO-DFhy06SHhgseBQ_poYDexBrjVwbWn_EHbiC0Y3C6LLQTByn0xD3-zHPelpT0vSrXmmWWu3ksk_jaVpDm10nN-OQtePrvgF5_vG8t_8qEzJnS9ADbO_70me5zv7RJ6VdR8xZfd8FqNlsPF-6o_o4ftknjXjaKP6cCFC45je-cXQpXsYTkfyC6uG-2sOS4a2U_M_oEwldbOjP8z6tRzT2WioSQdNCA28cQWkf7r4etAbKjMTnULh5rPS_A';
 
+const Motion = motionFr;
+
+const easeLobby = [0.22, 1, 0.36, 1];
+
+/** Biến thể Framer cho sảnh chat — khi reduce motion: không trễ / không trượt. */
+function chatLobbyMotionVariants(reduceMotion) {
+  if (reduceMotion) {
+    const instant = { hidden: {}, show: {} };
+    return {
+      hub: instant,
+      inner: instant,
+      hero: instant,
+      heroCol: instant,
+      featureGrid: instant,
+      card: instant,
+      fab: instant,
+    };
+  }
+  return {
+    hub: {
+      hidden: { opacity: 0 },
+      show: {
+        opacity: 1,
+        transition: { duration: 0.32, ease: easeLobby, staggerChildren: 0.2, delayChildren: 0.04 },
+      },
+    },
+    inner: {
+      hidden: { opacity: 0, y: 18 },
+      show: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.42, ease: easeLobby, staggerChildren: 0.16, delayChildren: 0.06 },
+      },
+    },
+    hero: {
+      hidden: { opacity: 0, y: 34 },
+      show: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.48, ease: easeLobby, staggerChildren: 0.12, delayChildren: 0.08 },
+      },
+    },
+    heroCol: {
+      hidden: { opacity: 0, y: 26 },
+      show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: easeLobby } },
+    },
+    featureGrid: {
+      hidden: { opacity: 0, y: 38 },
+      show: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.44, ease: easeLobby, staggerChildren: 0.11, delayChildren: 0.1 },
+      },
+    },
+    card: {
+      hidden: { opacity: 0, y: 40 },
+      show: { opacity: 1, y: 0, transition: { duration: 0.42, ease: easeLobby } },
+    },
+    fab: {
+      hidden: { opacity: 0, scale: 0.88, y: 16 },
+      show: {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        transition: { type: 'spring', stiffness: 400, damping: 26, delay: 0.42 },
+      },
+    },
+  };
+}
+
+const lobbyCardHover = { y: -5, transition: { type: 'spring', stiffness: 420, damping: 24 } };
+
 export default function ChatPage() {
   const navigate = useNavigate();
+  const reduceMotion = useReducedMotion();
+  const lobbyMv = useMemo(() => chatLobbyMotionVariants(!!reduceMotion), [reduceMotion]);
   const { user } = useAuth();
   const [catalog, setCatalog] = useState([]);
   const [discoverRooms, setDiscoverRooms] = useState([]);
@@ -229,10 +305,18 @@ export default function ChatPage() {
     return (
       <MojiChatLayout variant="lobby" selectedRoomId={null}>
         <div className="chat-lobby-root">
-          <div className="chat-lobby-hub">
-            <div className="chat-lobby-hub__inner">
-              <header className="chat-lobby-hero">
-                <div className="chat-lobby-hero__copy">
+          <div className="chat-lobby-hub__sakura" aria-hidden>
+            <SakuraRainLayer petalCount={22} buoyant />
+          </div>
+          <Motion.div
+            className="chat-lobby-hub"
+            variants={lobbyMv.hub}
+            initial={reduceMotion ? false : 'hidden'}
+            animate="show"
+          >
+            <Motion.div className="chat-lobby-hub__inner" variants={lobbyMv.inner}>
+              <Motion.header className="chat-lobby-hero" variants={lobbyMv.hero}>
+                <Motion.div className="chat-lobby-hero__copy" variants={lobbyMv.heroCol}>
                   <p className="chat-lobby-hero__kicker">Chào mừng trở lại</p>
                   <h1 className="chat-lobby-hero__title">
                     Chào mừng bạn đến với <em>YumeGo-ji!</em>
@@ -249,8 +333,8 @@ export default function ChatPage() {
                       Khám phá cộng đồng
                     </button>
                   </div>
-                </div>
-                <div className="chat-lobby-hero__visual">
+                </Motion.div>
+                <Motion.div className="chat-lobby-hero__visual" variants={lobbyMv.heroCol}>
                   <img
                     src={CHAT_LOBBY_HERO_IMAGE}
                     alt="Cổng đền và hoa anh đào — minh họa không gian học"
@@ -266,11 +350,11 @@ export default function ChatPage() {
                     </div>
                     <p className="chat-lobby-hero__progress-hint">Tham gia phòng và hoàn thành bài trên Học tập để tăng tiến độ.</p>
                   </div>
-                </div>
-              </header>
+                </Motion.div>
+              </Motion.header>
 
-              <section className="chat-lobby-features" aria-label="Lối vào nhanh">
-                <article className="chat-lobby-card">
+              <Motion.section className="chat-lobby-features" aria-label="Lối vào nhanh" variants={lobbyMv.featureGrid}>
+                <Motion.article className="chat-lobby-card" variants={lobbyMv.card} whileHover={lobbyCardHover}>
                   <span className="chat-lobby-card__ico" aria-hidden>
                     💬
                   </span>
@@ -279,8 +363,8 @@ export default function ChatPage() {
                   <button type="button" className="chat-lobby-card__link" onClick={() => navigate(ROUTES.LEARN)}>
                     Tìm hiểu thêm →
                   </button>
-                </article>
-                <article className="chat-lobby-card">
+                </Motion.article>
+                <Motion.article className="chat-lobby-card" variants={lobbyMv.card} whileHover={lobbyCardHover}>
                   <span className="chat-lobby-card__ico" aria-hidden>
                     👥
                   </span>
@@ -289,8 +373,8 @@ export default function ChatPage() {
                   <button type="button" className="chat-lobby-card__link" onClick={openDiscoverFromLobby}>
                     Tham gia phòng →
                   </button>
-                </article>
-                <article className="chat-lobby-card">
+                </Motion.article>
+                <Motion.article className="chat-lobby-card" variants={lobbyMv.card} whileHover={lobbyCardHover}>
                   <span className="chat-lobby-card__ico chat-lobby-card__ico--ai" aria-hidden>
                     AI
                   </span>
@@ -299,20 +383,23 @@ export default function ChatPage() {
                   <button type="button" className="chat-lobby-card__link" onClick={openDiscoverFromLobby}>
                     Mở danh sách phòng →
                   </button>
-                </article>
-              </section>
-            </div>
+                </Motion.article>
+              </Motion.section>
+            </Motion.div>
 
-            <button
+            <Motion.button
               type="button"
               className="chat-lobby-fab"
               title="Mở danh sách phòng chat"
               aria-label="Mở danh sách phòng chat"
+              variants={lobbyMv.fab}
+              whileHover={{ scale: 1.06 }}
+              whileTap={{ scale: 0.96 }}
               onClick={openDiscoverFromLobby}
             >
               <span aria-hidden>💬</span>
-            </button>
-          </div>
+            </Motion.button>
+          </Motion.div>
         </div>
       </MojiChatLayout>
     );

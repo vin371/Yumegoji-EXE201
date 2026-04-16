@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion as motionFr, useReducedMotion } from 'framer-motion';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../data/routes';
 import { N5_LESSONS } from '../../data/n5BeginnerCourse';
@@ -6,6 +7,9 @@ import { useAuth } from '../../hooks/useAuth';
 import http from '../../api/client';
 import LearnAiWidget from './LearnAiWidget';
 import { LearnSidebarShell } from './components/LearnSidebarShell';
+import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
+
+const Motion = motionFr;
 
 const SECTION_ORDER = ['dialogue', 'reference', 'reading', 'vocab', 'kanji', 'grammar'];
 const STATIC_SLUGS = new Set(N5_LESSONS.map((l) => l.slug));
@@ -59,6 +63,7 @@ async function fetchLearnLayoutSnapshot(isAuthenticated) {
 export default function LearnLayout() {
   const { isAuthenticated, user } = useAuth();
   const location = useLocation();
+  const reduceMotion = useReducedMotion();
   const navigate = useNavigate();
   const [sectionFilter, setSectionFilter] = useState('all');
   const [publishedFromDb, setPublishedFromDb] = useState([]);
@@ -142,8 +147,10 @@ export default function LearnLayout() {
   }
 
   return (
-    <div className="page learn-layout learn-layout--shodo yume-page">
-      <div className="learn-layout__grid learn-layout__grid--shodo">
+    <div className="page learn-layout learn-layout--shodo yume-page learn-layout--crimson-blossom">
+      <SakuraRainLayer petalCount={22} />
+      <div className="learn-layout__blossom-content">
+        <div className="learn-layout__grid learn-layout__grid--shodo">
         <LearnSidebarShell
           user={user}
           displayName={displayName}
@@ -159,16 +166,31 @@ export default function LearnLayout() {
         />
 
         <main className="learn-layout__main learn-layout__main--shodo">
-          <Outlet
-            context={{
-              reloadSidebarProgress: reloadLearnLayoutData,
-              sectionFilter,
-              goFilter,
-            }}
-          />
+          <AnimatePresence mode="wait" initial={false}>
+            <Motion.div
+              key={location.pathname}
+              className="learn-layout__outlet-motion"
+              initial={reduceMotion ? false : { opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={reduceMotion ? undefined : { opacity: 0, x: -12 }}
+              transition={{
+                duration: reduceMotion ? 0.05 : 0.3,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            >
+              <Outlet
+                context={{
+                  reloadSidebarProgress: reloadLearnLayoutData,
+                  sectionFilter,
+                  goFilter,
+                }}
+              />
+            </Motion.div>
+          </AnimatePresence>
         </main>
+        </div>
+        <LearnAiWidget isAuthenticated={isAuthenticated} />
       </div>
-      <LearnAiWidget isAuthenticated={isAuthenticated} />
     </div>
   );
 }

@@ -6087,13 +6087,25 @@ html[data-theme='dark'] .moji-chat--lobby-solo {
 }
 
 .chat-lobby-root {
+  position: relative;
+  isolation: isolate;
   width: 100%;
   min-height: 100%;
   box-sizing: border-box;
 }
 
+/* Sakura phía sau nội dung sảnh chat */
+.chat-lobby-hub__sakura {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
 .chat-lobby-hub {
   position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 1120px;
   margin: 0 auto;

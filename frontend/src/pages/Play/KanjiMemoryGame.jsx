@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
+import { PlayGameSetupPro } from '../../components/play/PlayGameSetupPro';
+import { playSetupChildVariants, playSetupParentVariants } from '../../components/play/playSetupMotion';
 import SpeakJaButton from '../../components/learn/SpeakJaButton';
 import { ROUTES } from '../../data/routes';
 import { N5_LESSONS } from '../../data/n5BeginnerCourse';
@@ -8,6 +11,8 @@ import {
   extractKanjiMemoryPairsFromN5Lessons,
   pickRandomPairs,
 } from '../../utils/kanjiMemoryFromLessons';
+
+const Motion = motion;
 
 const DEFAULT_PAIR_TARGET = 8;
 const MIN_PAIRS = 4;
@@ -54,6 +59,7 @@ function buildCardsFromPairs(pairs) {
 }
 
 export default function KanjiMemoryGame() {
+  const reduceMotion = useReducedMotion();
   const [searchParams, setSearchParams] = useSearchParams();
   const lessonParam = searchParams.get('lesson') || '';
 
@@ -230,64 +236,130 @@ export default function KanjiMemoryGame() {
   );
 
   if (phase === 'setup') {
+    const parentV = playSetupParentVariants(!!reduceMotion);
+    const childV = playSetupChildVariants(!!reduceMotion);
     return (
-      <div className="kanji-memory kanji-memory--setup">
-        <header className="kanji-memory__head">
-          <Link className="kanji-memory__back" to={ROUTES.PLAY}>
-            ← Quay lại
-          </Link>
-          <h1 className="kanji-memory__title">KANJI MEMORY</h1>
-        </header>
-        <p className="kanji-memory__intro">
-          Lật thẻ và ghép <strong>Kanji / từ</strong> với <strong>nghĩa tiếng Việt</strong> lấy từ nội dung khóa{' '}
-          <strong>N5</strong> (bài học trong app).
-        </p>
-        <div className="kanji-memory__form">
-          <label className="kanji-memory__field">
-            <span>Nguồn từ vựng</span>
-            <select value={selectedLesson} onChange={(e) => setSelectedLesson(e.target.value)}>
-              <option value="">Toàn bộ bài N5 (gom tất cả)</option>
-              {lessonOptions.map((o) => (
-                <option key={o.slug} value={o.slug}>
-                  {o.label} — {o.count} cặp
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="kanji-memory__field">
-            <span>
-              Số cặp (tối đa {Math.min(DEFAULT_PAIR_TARGET, Math.max(maxPairsAvailable, MIN_PAIRS))})
-            </span>
-            <select
-              value={selectPairValue}
-              onChange={(e) => setPairTarget(Number(e.target.value))}
-              disabled={maxPairsAvailable < MIN_PAIRS}
-            >
-              {Array.from(
-                { length: Math.max(0, Math.min(maxPairsAvailable, DEFAULT_PAIR_TARGET) - MIN_PAIRS + 1) },
-                (_, i) => MIN_PAIRS + i,
-              ).map((n) => (
-                <option key={n} value={n}>
-                  {n} cặp ({n * 2} thẻ)
-                </option>
-              ))}
-            </select>
-          </label>
+      <PlayGameSetupPro>
+        <Motion.div
+          className="kanji-memory kanji-memory--setup play-setup-pro__content"
+          variants={parentV}
+          initial={reduceMotion ? false : 'hidden'}
+          animate="show"
+        >
+          <Motion.header variants={childV} className="play-setup-pro__head kanji-memory__setup-head">
+            <Link className="play-setup-pro__back" to={ROUTES.PLAY}>
+              ← Trò chơi
+            </Link>
+            <h1 className="play-setup-pro__title">
+              <span className="play-setup-pro__title-part">Kanji </span>
+              <span className="play-setup-pro__title-accent">Memory</span>
+            </h1>
+          </Motion.header>
+
+          <Motion.div variants={childV} className="play-setup-pro__grid">
+            <section className="play-setup-pro__info-card">
+              <p className="play-setup-pro__lead">
+                Lật thẻ và ghép <strong>Kanji / từ</strong> với <strong>nghĩa tiếng Việt</strong> từ khóa N5 trong app —
+                luyện trí nhớ và nhận diện chữ.
+              </p>
+              <ul className="play-setup-pro__features">
+                <li className="play-setup-pro__feature">
+                  <span className="play-setup-pro__feature-ico" aria-hidden>
+                    🎴
+                  </span>
+                  <div>
+                    <div className="play-setup-pro__feature-title">Ghép cặp Kanji — nghĩa</div>
+                    <div className="play-setup-pro__feature-desc">
+                      Mỗi cặp gồm 2 thẻ; mở đúng hai thẻ cùng cặp để ghi điểm.
+                    </div>
+                  </div>
+                </li>
+                <li className="play-setup-pro__feature">
+                  <span className="play-setup-pro__feature-ico" aria-hidden>
+                    ★
+                  </span>
+                  <div>
+                    <div className="play-setup-pro__feature-title">EXP sau phiên</div>
+                    <div className="play-setup-pro__feature-desc">
+                      Hoàn thành vòng để ghi nhận phần thưởng lên server (cần đăng nhập).
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </section>
+
+            <section className="play-setup-pro__config-card">
+              <div className="play-setup-pro__config-title">
+                <span className="play-setup-pro__config-gear" aria-hidden>
+                  ⚙
+                </span>
+                Cấu hình lượt chơi
+              </div>
+              <div className="kanji-memory__form play-setup-pro__kanji-form">
+                <label className="kanji-memory__field play-setup-pro__field">
+                  <span>Nguồn từ vựng</span>
+                  <select value={selectedLesson} onChange={(e) => setSelectedLesson(e.target.value)}>
+                    <option value="">Toàn bộ bài N5 (gom tất cả)</option>
+                    {lessonOptions.map((o) => (
+                      <option key={o.slug} value={o.slug}>
+                        {o.label} — {o.count} cặp
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="kanji-memory__field play-setup-pro__field">
+                  <span>
+                    Số cặp (tối đa {Math.min(DEFAULT_PAIR_TARGET, Math.max(maxPairsAvailable, MIN_PAIRS))})
+                  </span>
+                  <select
+                    value={selectPairValue}
+                    onChange={(e) => setPairTarget(Number(e.target.value))}
+                    disabled={maxPairsAvailable < MIN_PAIRS}
+                  >
+                    {Array.from(
+                      { length: Math.max(0, Math.min(maxPairsAvailable, DEFAULT_PAIR_TARGET) - MIN_PAIRS + 1) },
+                      (_, i) => MIN_PAIRS + i,
+                    ).map((n) => (
+                      <option key={n} value={n}>
+                        {n} cặp ({n * 2} thẻ)
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </section>
+          </Motion.div>
+
+          <Motion.p variants={childV} className="kanji-memory__pool play-setup-pro__hint-tight">
+            Đang có <strong>{poolAll.length}</strong> cặp unique trong toàn khóa; bài chọn: <strong>{maxPairsAvailable}</strong>{' '}
+            cặp.
+          </Motion.p>
+
           {maxPairsAvailable < MIN_PAIRS ? (
-            <p className="kanji-memory__err">
+            <Motion.p variants={childV} className="kanji-memory__err">
               Chưa đủ cặp Kanji trong bài đã chọn (cần ít nhất {MIN_PAIRS}). Thử &quot;Toàn bộ bài N5&quot;.
-            </p>
+            </Motion.p>
           ) : (
-            <button type="button" className="kanji-memory__start" onClick={startGame}>
-              Bắt đầu
-            </button>
+            <Motion.div variants={childV}>
+              <Motion.button
+                type="button"
+                className="play-setup-pro__start kanji-memory__start"
+                onClick={startGame}
+                whileHover={reduceMotion ? undefined : { scale: 1.02, y: -1 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+              >
+                Bắt đầu <span aria-hidden>▶</span>
+              </Motion.button>
+            </Motion.div>
           )}
-        </div>
-        <p className="kanji-memory__pool">
-          Đang có <strong>{poolAll.length}</strong> cặp unique trong toàn khóa; bài chọn:{' '}
-          <strong>{maxPairsAvailable}</strong> cặp.
-        </p>
-      </div>
+
+          <Motion.section variants={childV} className="play-setup-pro__banner" aria-label="Cảm hứng học tập">
+            <div className="play-setup-pro__banner-media" />
+            <p className="play-setup-pro__banner-cap">Cảm hứng học tập từ thiên nhiên</p>
+          </Motion.section>
+        </Motion.div>
+      </PlayGameSetupPro>
     );
   }
 

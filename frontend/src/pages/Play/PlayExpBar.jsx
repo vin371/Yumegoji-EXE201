@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchMyProgressSummary } from '../../services/learningProgressService';
+import { playExpTierProgress } from '../../utils/playExpTier';
 
 const EXP_REFRESH = 'yume-play-exp-refresh';
 
@@ -8,34 +9,6 @@ function pick(obj, ...keys) {
     if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
   }
   return undefined;
-}
-
-const TIERS = [
-  { label: 'Bronze', minExp: 0 },
-  { label: 'Silver', minExp: 5000 },
-  { label: 'Gold', minExp: 15000 },
-  { label: 'Platinum', minExp: 30000 },
-];
-
-function tierProgress(exp) {
-  const e = Math.max(0, Number(exp) || 0);
-  let idx = 0;
-  for (let i = TIERS.length - 1; i >= 0; i -= 1) {
-    if (e >= TIERS[i].minExp) {
-      idx = i;
-      break;
-    }
-  }
-  const cur = TIERS[idx];
-  const next = TIERS[idx + 1];
-  if (!next) return { pct: 100, line: `${e.toLocaleString('vi-VN')} XP`, sub: cur.label };
-  const span = next.minExp - cur.minExp;
-  const pct = Math.min(100, Math.round(((e - cur.minExp) / span) * 100));
-  return {
-    pct,
-    line: `${e.toLocaleString('vi-VN')} / ${next.minExp.toLocaleString('vi-VN')} XP`,
-    sub: `${cur.label} → ${next.label}`,
-  };
 }
 
 export default function PlayExpBar() {
@@ -66,20 +39,39 @@ export default function PlayExpBar() {
     };
   }, []);
 
-  const prog = useMemo(() => tierProgress(exp), [exp]);
+  const prog = useMemo(() => playExpTierProgress(exp), [exp]);
 
   if (err) return null;
 
   return (
     <div className="play-expbar" aria-label="Tiến độ EXP">
-      <div className="play-expbar__row">
-        <span className="play-expbar__label">EXP · lên cấp</span>
+      <div className="play-expbar__row play-expbar__row--title">
+        <span className="play-expbar__label">Cấp độ hiện tại</span>
         <span className="play-expbar__nums">{prog.line}</span>
       </div>
-      <div className="play-expbar__track" role="progressbar" aria-valuenow={prog.pct} aria-valuemin={0} aria-valuemax={100}>
+      <div className="play-expbar__rank">
+        <span className="play-expbar__rank-ico" aria-hidden>
+          ★
+        </span>
+        <span className="play-expbar__rank-text">{prog.rankLabel} Rank</span>
+      </div>
+      <div
+        className="play-expbar__track"
+        role="progressbar"
+        aria-valuenow={prog.pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
         <div className="play-expbar__fill" style={{ width: `${prog.pct}%` }} />
       </div>
-      <span className="play-expbar__sub">{prog.sub}</span>
+      {prog.nextRankLabel ? (
+        <div className="play-expbar__tier-labels">
+          <span>{prog.rankLabel}</span>
+          <span>{prog.nextRankLabel}</span>
+        </div>
+      ) : (
+        <span className="play-expbar__sub">{prog.sub}</span>
+      )}
     </div>
   );
 }

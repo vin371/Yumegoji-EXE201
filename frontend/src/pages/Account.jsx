@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion as motionFr, useReducedMotion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
+import { SakuraRainLayer } from '../components/effects/SakuraRainLayer';
 import http, { ENV } from '../api/client';
 import { authService } from '../services/authService';
 import { PremiumBadge } from '../components/profile/PremiumBadge';
@@ -51,6 +53,178 @@ function formatPostVisibilityLine(createdAt) {
   return `${d.toLocaleDateString('vi-VN')} • Công khai`;
 }
 
+const Motion = motionFr;
+
+function formatIntVi(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return '0';
+  const v = Math.round(Math.abs(x));
+  const signed = x < 0 ? '-' : '';
+  const s = String(v).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return signed + s;
+}
+
+function aggregateLessonProgress(byLevel) {
+  const rows = Array.isArray(byLevel) ? byLevel : [];
+  let completed = 0;
+  let total = 0;
+  for (const row of rows) {
+    completed += Number(pick(row, 'completedLessons', 'CompletedLessons') ?? 0) || 0;
+    total += Number(pick(row, 'totalPublishedLessons', 'TotalPublishedLessons') ?? 0) || 0;
+  }
+  const safeDone = Math.min(completed, Math.max(total, 0));
+  const pct = total > 0 ? Math.min(100, Math.round((safeDone / total) * 100)) : 0;
+  return { completed, total, pct };
+}
+
+function commentCreatedMs(c) {
+  const t = new Date(c?.createdAt ?? c?.CreatedAt ?? 0).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
+
+function postCreatedMs(p) {
+  const t = new Date(p?.createdAt ?? p?.CreatedAt ?? 0).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
+
+function sortCommentsNewestFirst(list) {
+  return [...(Array.isArray(list) ? list : [])].sort((a, b) => commentCreatedMs(b) - commentCreatedMs(a));
+}
+
+const HANAMI_MEMORY_SWATCHES = [
+  'linear-gradient(135deg, #fecdd3 0%, #fda4af 100%)',
+  'linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%)',
+  'linear-gradient(135deg, #e9d5ff 0%, #c4b5fd 100%)',
+  'linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%)',
+];
+
+const hanamiEase = [0.22, 1, 0.36, 1];
+
+function hanamiVariants(reduceMotion) {
+  if (reduceMotion) {
+    const z = { hidden: {}, show: {} };
+    return { root: z, main: z, block: z, post: z, feed: z };
+  }
+  return {
+    root: {
+      hidden: { opacity: 0 },
+      show: {
+        opacity: 1,
+        transition: { duration: 0.35, ease: hanamiEase, staggerChildren: 0.12, delayChildren: 0.04 },
+      },
+    },
+    main: {
+      hidden: {},
+      show: {
+        transition: { staggerChildren: 0.1, delayChildren: 0.06 },
+      },
+    },
+    block: {
+      hidden: { opacity: 0, y: 26 },
+      show: { opacity: 1, y: 0, transition: { duration: 0.42, ease: hanamiEase } },
+    },
+    post: {
+      hidden: { opacity: 0, y: 20 },
+      show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: hanamiEase } },
+    },
+    feed: {
+      hidden: {},
+      show: {
+        transition: { staggerChildren: 0.085, delayChildren: 0.03 },
+      },
+    },
+  };
+}
+
+function AccountPostSmartComments({ postId, comments, commentInput, onInputChange, onSubmit }) {
+  const reduceMotion = useReducedMotion();
+  const [expanded, setExpanded] = useState(false);
+  const sorted = useMemo(() => sortCommentsNewestFirst(comments), [comments]);
+  const preview = sorted.slice(0, 3);
+  const extra = sorted.slice(3);
+  const hasMore = sorted.length > 3;
+
+  return (
+    <div className="yume-account__comments yume-account__comments--smart">
+      {sorted.length > 0 ? (
+        <>
+          <ul className="yume-account__comment-list yume-account__comment-list--bubbles">
+            {preview.map((c) => {
+              const cid = c.id ?? c.Id;
+              const author = c.author ?? c.Author ?? {};
+              const name =
+                pick(author, 'displayName', 'DisplayName') ||
+                pick(author, 'username', 'Username') ||
+                pick(c, 'authorDisplayName', 'AuthorDisplayName') ||
+                'Thành viên';
+              const body = c.content ?? c.Content ?? '';
+              return (
+                <li key={String(cid)} className="yume-account__comment-bubble">
+                  <div className="yume-account__comment-bubble__author">{name}</div>
+                  <div className="yume-account__comment-bubble__text">{body}</div>
+                </li>
+              );
+            })}
+          </ul>
+          <AnimatePresence initial={false}>
+            {expanded && extra.length > 0 ? (
+              <Motion.div
+                key={`extra-${postId}`}
+                className="yume-account__comment-extra"
+                initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
+                transition={{ duration: reduceMotion ? 0.01 : 0.34, ease: hanamiEase }}
+                style={{ overflow: 'hidden' }}
+              >
+                <ul className="yume-account__comment-list yume-account__comment-list--bubbles yume-account__comment-list--extra">
+                  {extra.map((c) => {
+                    const cid = c.id ?? c.Id;
+                    const author = c.author ?? c.Author ?? {};
+                    const name =
+                      pick(author, 'displayName', 'DisplayName') ||
+                      pick(author, 'username', 'Username') ||
+                      'Thành viên';
+                    const body = c.content ?? c.Content ?? '';
+                    return (
+                      <li key={String(cid)} className="yume-account__comment-bubble">
+                        <div className="yume-account__comment-bubble__author">{name}</div>
+                        <div className="yume-account__comment-bubble__text">{body}</div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Motion.div>
+            ) : null}
+          </AnimatePresence>
+          {hasMore ? (
+            <button type="button" className="yume-account__comment-toggle" onClick={() => setExpanded((v) => !v)}>
+              {expanded ? 'Thu gọn bình luận' : `Xem tất cả bình luận (${sorted.length})`}
+            </button>
+          ) : null}
+        </>
+      ) : null}
+      <div className="yume-account__comment-form">
+        <input
+          type="text"
+          placeholder="Viết bình luận…"
+          value={commentInput || ''}
+          onChange={(e) => onInputChange(postId, e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              void onSubmit(postId);
+            }
+          }}
+        />
+        <button type="button" onClick={() => void onSubmit(postId)}>
+          Gửi
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AccountPage() {
   const { user, setUser } = useAuth();
   const [avatarPreview, setAvatarPreview] = useState(user?.avatarUrl ? buildImageUrl(user.avatarUrl) : '');
@@ -94,6 +268,8 @@ export default function AccountPage() {
   const avatarInitial = (displayName || 'U').trim().slice(0, 2).toUpperCase();
   const isPremium = useMemo(() => userIsPremium(user), [user]);
   const levelTitle = accountLevelTitle(levelCode);
+  const reduceMotion = useReducedMotion();
+  const hanamiV = useMemo(() => hanamiVariants(!!reduceMotion), [reduceMotion]);
 
   const levelCompletionPct = useMemo(() => {
     const byLevel = progressSummary?.byLevel ?? progressSummary?.ByLevel ?? [];
@@ -102,6 +278,43 @@ export default function AccountPage() {
     );
     return Math.min(100, Math.round(Number(pick(row, 'completionPercent', 'CompletionPercent')) || 0));
   }, [progressSummary, levelCode]);
+
+  const journeyAgg = useMemo(() => {
+    const by = progressSummary?.byLevel ?? progressSummary?.ByLevel ?? [];
+    return aggregateLessonProgress(by);
+  }, [progressSummary]);
+
+  const accountExp = useMemo(() => {
+    const u = Number(pick(user, 'exp', 'Exp') ?? 0) || 0;
+    const s = Number(pick(progressSummary, 'exp', 'Exp') ?? 0) || 0;
+    return Math.max(u, s);
+  }, [user, progressSummary]);
+
+  /** Tối đa 4 ô: ưu tiên ảnh bài đăng (mới nhất), sau đó ảnh bìa / avatar nếu còn chỗ — tránh trùng URL. */
+  const memoryLaneCells = useMemo(() => {
+    const seen = new Set();
+    const cells = [];
+
+    const push = (fullUrl, meta) => {
+      if (!fullUrl) return false;
+      const key = String(fullUrl).replace(/\?.*$/, '');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      cells.push({ src: fullUrl, ...meta });
+      return cells.length >= 4;
+    };
+
+    const sorted = [...posts].sort((a, b) => postCreatedMs(b) - postCreatedMs(a));
+    for (const p of sorted) {
+      const path = p.imageUrl ?? p.ImageUrl;
+      if (!path) continue;
+      if (push(buildImageUrl(path), { kind: 'post', postId: p.id ?? p.Id })) break;
+    }
+    if (cells.length < 4 && coverPreview) push(coverPreview, { kind: 'cover' });
+    if (cells.length < 4 && avatarPreview) push(avatarPreview, { kind: 'avatar' });
+
+    return cells;
+  }, [posts, coverPreview, avatarPreview]);
 
   useEffect(() => {
     const url = user?.avatarUrl ? buildImageUrl(user.avatarUrl) : '';
@@ -258,7 +471,7 @@ export default function AccountPage() {
       setPostError('');
       const res = await http.get('/api/social/posts', { params: { limit: 50 } });
       const all = Array.isArray(res.data) ? res.data : [];
-      const myId = user?.id ?? user?.Id;
+      const myId = user?.id ?? user?.userId ?? user?.Id;
       const mine = all.filter((p) => (p.author?.id ?? p.Author?.Id) === myId);
       setPosts(mine);
 
@@ -288,9 +501,11 @@ export default function AccountPage() {
   };
 
   useEffect(() => {
+    if (user?.id == null && user?.userId == null && user?.Id == null) return undefined;
     void loadMyPosts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadMyPosts đọc user; gọi lại khi đã đăng nhập
+  }, [user?.id, user?.userId, user?.Id]);
 
   const handlePostImageChange = (e) => {
     const file = e.target.files?.[0];
@@ -399,9 +614,100 @@ export default function AccountPage() {
     }
   };
 
+  const streakUi = Number(pick(progressSummary, 'streakDays', 'StreakDays') ?? 0) || 0;
+
   return (
-    <div className="yume-dashboard yume-account-page yume-account-page--sakura">
-      <header className={`yume-account-profile yume-account-profile--sakura${isPremium ? ' yume-account-profile--premium' : ''}`}>
+    <div className="yume-dashboard yume-account-page yume-account-page--sakura yume-account-page--hanami">
+      <div className="yume-account-hanami-sakura" aria-hidden>
+        <SakuraRainLayer petalCount={24} buoyant />
+      </div>
+      <Motion.div
+        className="yume-account-hanami-grid"
+        variants={hanamiV.root}
+        initial={reduceMotion ? false : 'hidden'}
+        animate="show"
+      >
+        <Motion.aside className="yume-account-hanami-side" variants={hanamiV.block} aria-label="Tiến độ học">
+          <div className="yume-account-hanami-side__card">
+            <div className="yume-account-hanami-ring-wrap">
+              <div
+                className="yume-account-hanami-ring-outer"
+                style={{
+                  background: `conic-gradient(#be123c ${levelCompletionPct}%, rgba(15, 23, 42, 0.08) 0)`,
+                }}
+                aria-hidden
+              >
+                <div className="yume-account-hanami-ring-inner" />
+              </div>
+              <div className="yume-account-hanami-ring__label">
+                <span className="yume-account-hanami-ring__pct">{progressLoading ? '…' : `${levelCompletionPct}%`}</span>
+                <span className="yume-account-hanami-ring__sub">Lộ trình {levelCode}</span>
+              </div>
+            </div>
+            <p className="yume-account-hanami-journey">
+              {progressLoading
+                ? 'Đang tải tiến độ…'
+                : journeyAgg.total > 0
+                  ? `${formatIntVi(journeyAgg.completed)} / ${formatIntVi(journeyAgg.total)} bài đã xuất bản`
+                  : 'Chưa có bài trên lộ trình — vào Học tập để bắt đầu.'}
+            </p>
+            <div className="yume-account-hanami-meta">
+              <span className="yume-account-hanami-meta__row">
+                <span aria-hidden>🔥</span> Streak: <strong>{formatIntVi(streakUi)}</strong> ngày
+              </span>
+              <span className="yume-account-hanami-meta__row">
+                <span aria-hidden>✨</span> EXP: <strong>{formatIntVi(accountExp)}</strong>
+              </span>
+            </div>
+          </div>
+          <div className="yume-account-hanami-side__card yume-account-hanami-side__card--lane">
+            <div className="yume-account-hanami-lane-head">
+              <span className="yume-account-hanami-lane-title">Kỷ niệm học tập</span>
+              <a href="#yume-account-feed-title" className="yume-account-hanami-lane-link">
+                Xem tất cả
+              </a>
+            </div>
+            <div className="yume-account-hanami-lane-grid" role="list" aria-label="Ảnh từ bài đăng và hồ sơ của bạn">
+              {Array.from({ length: 4 }, (_, i) => {
+                const cell = memoryLaneCells[i];
+                if (cell) {
+                  const label =
+                    cell.kind === 'post'
+                      ? 'Ảnh từ bài đăng'
+                      : cell.kind === 'cover'
+                        ? 'Ảnh bìa tài khoản'
+                        : 'Ảnh đại diện';
+                  return (
+                    <div
+                      key={`m-${i}-${cell.kind}-${cell.postId ?? 'profile'}`}
+                      role="listitem"
+                      className="yume-account-hanami-lane-cell yume-account-hanami-lane-cell--img"
+                      style={{ backgroundImage: `url(${cell.src})` }}
+                      title={label}
+                    />
+                  );
+                }
+                return (
+                  <div
+                    key={`mem-ph-${i}`}
+                    role="presentation"
+                    className="yume-account-hanami-lane-cell yume-account-hanami-lane-cell--placeholder"
+                    style={{ background: HANAMI_MEMORY_SWATCHES[i] }}
+                  />
+                );
+              })}
+            </div>
+            {memoryLaneCells.length === 0 && !loadingPosts ? (
+              <p className="yume-account-hanami-lane-hint">Đăng bài kèm ảnh hoặc thêm ảnh bìa — ảnh sẽ hiện ở đây.</p>
+            ) : null}
+          </div>
+        </Motion.aside>
+
+        <Motion.div className="yume-account-hanami-main" variants={hanamiV.main}>
+      <Motion.header
+        className={`yume-account-profile yume-account-profile--sakura${isPremium ? ' yume-account-profile--premium' : ''}`}
+        variants={hanamiV.block}
+      >
         <div className="yume-account-profile__cover yume-account-profile__cover--sakura" role="region" aria-label="Ảnh bìa hồ sơ">
           {coverPreview ? (
             <img src={coverPreview} alt="" className="yume-account-profile__cover-img" />
@@ -491,7 +797,12 @@ export default function AccountPage() {
 
           {profileTab === 'info' ? (
             <div className="yume-account-profile__stats sakura-profile__stats">
-              <article className="yume-account-stat-card sakura-stat-card">
+              <Motion.article
+                className="yume-account-stat-card sakura-stat-card"
+                variants={hanamiV.block}
+                whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 24 }}
+              >
                 <div className="sakura-stat-card__icon sakura-stat-card__icon--trophy" aria-hidden>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -518,8 +829,13 @@ export default function AccountPage() {
                 <div className="yume-account-stat-card__hint">
                   {progressLoading ? 'Đang tải tiến độ…' : `${levelCompletionPct}% tiến độ`}
                 </div>
-              </article>
-              <article className="yume-account-stat-card sakura-stat-card">
+              </Motion.article>
+              <Motion.article
+                className="yume-account-stat-card sakura-stat-card"
+                variants={hanamiV.block}
+                whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 24 }}
+              >
                 <div className="sakura-stat-card__icon sakura-stat-card__icon--doc" aria-hidden>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -534,8 +850,13 @@ export default function AccountPage() {
                 <div className="yume-account-stat-card__label">Bài viết</div>
                 <div className="yume-account-stat-card__value">{loadingPosts ? '…' : posts.length}</div>
                 <div className="yume-account-stat-card__hint">Bài đăng của bạn</div>
-              </article>
-              <article className="yume-account-stat-card sakura-stat-card">
+              </Motion.article>
+              <Motion.article
+                className="yume-account-stat-card sakura-stat-card"
+                variants={hanamiV.block}
+                whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 24 }}
+              >
                 <div className="sakura-stat-card__icon sakura-stat-card__icon--people" aria-hidden>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.6" />
@@ -552,7 +873,7 @@ export default function AccountPage() {
                 <div className="yume-account-stat-card__label">Bạn bè</div>
                 <div className="yume-account-stat-card__value">{friendsCount === null ? '…' : friendsCount}</div>
                 <div className="yume-account-stat-card__hint">Danh sách kết bạn</div>
-              </article>
+              </Motion.article>
             </div>
           ) : null}
 
@@ -576,9 +897,13 @@ export default function AccountPage() {
             </div>
           ) : null}
         </div>
-      </header>
+      </Motion.header>
 
-      <section className="yume-account-composer yume-panel yume-account-composer--sakura" aria-label="Đăng bài mới">
+      <Motion.section
+        className="yume-account-composer yume-panel yume-account-composer--sakura"
+        aria-label="Đăng bài mới"
+        variants={hanamiV.block}
+      >
         <form onSubmit={handleCreatePost} className="yume-account-composer__form">
           <div className="yume-account-composer__row">
             <div className="yume-account-composer__mini-avatar" aria-hidden>
@@ -587,7 +912,7 @@ export default function AccountPage() {
             <textarea
               className="yume-account-composer__textarea"
               rows={3}
-              placeholder="Bạn đang nghĩ gì?"
+              placeholder="Chia sẻ bài học hoặc khoảnh khắc…"
               value={postContent}
               onChange={(e) => setPostContent(e.target.value)}
             />
@@ -620,7 +945,7 @@ export default function AccountPage() {
             <img src={postImagePreview} alt="" className="yume-account-composer__preview" />
           ) : null}
         </form>
-      </section>
+      </Motion.section>
 
       {postError ? (
         <p className="yume-account-feed__error" role="alert">
@@ -628,7 +953,11 @@ export default function AccountPage() {
         </p>
       ) : null}
 
-      <section className="yume-account-feed yume-account-feed--sakura" aria-labelledby="yume-account-feed-title">
+      <Motion.section
+        className="yume-account-feed yume-account-feed--sakura"
+        aria-labelledby="yume-account-feed-title"
+        variants={hanamiV.block}
+      >
         <h2 id="yume-account-feed-title" className="yume-account-feed__title sakura-feed__title">
           Bài đăng
         </h2>
@@ -638,7 +967,12 @@ export default function AccountPage() {
           ) : posts.length === 0 ? (
             <p className="yume-account-feed__empty">Chưa có bài đăng. Hãy viết dòng đầu tiên!</p>
           ) : (
-            <ul className="yume-account-post-list">
+            <Motion.ul
+              className="yume-account-post-list"
+              variants={hanamiV.feed}
+              initial={reduceMotion ? false : 'hidden'}
+              animate="show"
+            >
               {posts.map((p) => {
                 const id = p.id ?? p.Id;
                 const createdAt = p.createdAt ?? p.CreatedAt;
@@ -651,7 +985,13 @@ export default function AccountPage() {
                 const comments = commentsByPost[id] || [];
                 const reactTotal = totalReactionCount(reactionCounts);
                 return (
-                  <li key={id} className="yume-account-post-card yume-account-post-card--sakura">
+                  <Motion.li
+                    key={id}
+                    className="yume-account-post-card yume-account-post-card--sakura"
+                    variants={hanamiV.post}
+                    whileHover={reduceMotion ? undefined : { y: -3, scale: 1.008 }}
+                    transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+                  >
                     <div className="yume-account-post-card__head">
                       <div className="yume-account-post-card__author">
                         <div className="yume-account-post-card__author-av" aria-hidden>
@@ -722,42 +1062,22 @@ export default function AccountPage() {
                         })}
                       </div>
                     </div>
-                    <div className="yume-account__comments">
-                      {comments.length > 0 ? (
-                        <ul className="yume-account__comment-list">
-                          {comments.map((c) => (
-                            <li key={c.id ?? c.Id}>
-                              <strong>{c.author?.displayName ?? c.author?.username ?? 'Bạn bè'}</strong>
-                              <span>{c.content ?? c.Content}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                      <div className="yume-account__comment-form">
-                        <input
-                          type="text"
-                          placeholder="Viết bình luận…"
-                          value={commentInputs[id] || ''}
-                          onChange={(e) => handleCommentInputChange(id, e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              void handleSubmitComment(id);
-                            }
-                          }}
-                        />
-                        <button type="button" onClick={() => void handleSubmitComment(id)}>
-                          Gửi
-                        </button>
-                      </div>
-                    </div>
-                  </li>
+                    <AccountPostSmartComments
+                      postId={id}
+                      comments={comments}
+                      commentInput={commentInputs[id] || ''}
+                      onInputChange={handleCommentInputChange}
+                      onSubmit={handleSubmitComment}
+                    />
+                  </Motion.li>
                 );
               })}
-            </ul>
+            </Motion.ul>
           )}
         </div>
-      </section>
+      </Motion.section>
+      </Motion.div>
+    </Motion.div>
     </div>
   );
 }

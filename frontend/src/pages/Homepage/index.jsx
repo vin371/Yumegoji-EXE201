@@ -1,11 +1,153 @@
-import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { ROUTES } from '../../data/routes';
 import { ChatbotWidget } from '../../components/support/ChatbotWidget';
 import { HOMEPAGE_CTA, HOMEPAGE_HERO, HOMEPAGE_METHOD, HOMEPAGE_TESTIMONIALS, HOMEPAGE_WHY } from '../../data/homepageContent';
+import { useAuth } from '../../hooks/useAuth';
+import { fetchMyProgressSummary } from '../../services/learningProgressService';
+
+function pick(obj, ...keys) {
+  for (const k of keys) {
+    if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
+  }
+  return undefined;
+}
+
+function formatIntVi(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return '0';
+  const v = Math.round(Math.abs(x));
+  const signed = x < 0 ? '-' : '';
+  const s = String(v).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return signed + s;
+}
+
+function aggregateLessonProgress(byLevel) {
+  const rows = Array.isArray(byLevel) ? byLevel : [];
+  let completed = 0;
+  let total = 0;
+  for (const row of rows) {
+    completed += Number(pick(row, 'completedLessons', 'CompletedLessons') ?? 0) || 0;
+    total += Number(pick(row, 'totalPublishedLessons', 'TotalPublishedLessons') ?? 0) || 0;
+  }
+  const safeDone = Math.min(completed, Math.max(total, 0));
+  const pct = total > 0 ? Math.min(100, Math.round((safeDone / total) * 100)) : 0;
+  return { completed, total, pct };
+}
 
 /** Trang chủ marketing (Sakura Nihongo) — style: `styles/pages/homepage.css` */
 export default function Homepage() {
+  const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
+  const [progressSummary, setProgressSummary] = useState(null);
+  const [progressLoading, setProgressLoading] = useState(false);
+
+  const loadProgress = useCallback(async () => {
+    setProgressLoading(true);
+    try {
+      const data = await fetchMyProgressSummary();
+      setProgressSummary(data);
+    } catch {
+      setProgressSummary(null);
+    } finally {
+      setProgressLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setProgressSummary(null);
+      setProgressLoading(false);
+      return;
+    }
+    void loadProgress();
+  }, [isAuthenticated, loadProgress]);
+
+  const memberFirstName = useMemo(() => {
+    const raw = String(user?.displayName || user?.username || user?.name || '').trim();
+    if (!raw) return '';
+    return raw.split(/\s+/)[0] || raw;
+  }, [user]);
+
+  const progressFloat = useMemo(() => {
+    if (!isAuthenticated) return null;
+    if (progressLoading) {
+      return {
+        label: 'Tóm tắt học tập',
+        value: 'Đang tải…',
+        hint: 'Đang lấy dữ liệu từ tài khoản của bạn.',
+        muted: false,
+        pct: null,
+      };
+    }
+    if (!progressSummary) {
+      return {
+        label: 'Tóm tắt học tập',
+        value: 'Chưa tải được dữ liệu',
+        hint: 'Thử tải lại trang hoặc đăng nhập lại.',
+        muted: true,
+        pct: null,
+      };
+    }
+    const exp = Number(pick(progressSummary, 'exp', 'Exp') ?? 0) || 0;
+    const streak = Number(pick(progressSummary, 'streakDays', 'StreakDays') ?? 0) || 0;
+    const byLevel = pick(progressSummary, 'byLevel', 'ByLevel') ?? [];
+    const { completed, total, pct } = aggregateLessonProgress(byLevel);
+
+    if (total < 1) {
+      return {
+        label: 'Tóm tắt học tập',
+        value: 'Lộ trình đang cập nhật',
+        hint: 'Vào mục Học tập để bắt đầu bài đầu tiên.',
+        muted: true,
+        pct: null,
+      };
+    }
+    if (completed < 1) {
+      return {
+        label: 'Tóm tắt học tập',
+        value: `0 / ${formatIntVi(total)} bài`,
+        hint: `Streak ${formatIntVi(streak)} ngày · EXP ${formatIntVi(exp)} — bắt đầu từ một bài bất kỳ trên Học tập.`,
+        muted: true,
+        pct: 0,
+      };
+    }
+    return {
+      label: 'Tóm tắt học tập',
+      value: `${formatIntVi(completed)} / ${formatIntVi(total)} bài`,
+      hint: `Streak ${formatIntVi(streak)} ngày · EXP ${formatIntVi(exp)} · Hoàn thành ${pct}% lộ trình đã xuất bản.`,
+      muted: false,
+      pct,
+    };
+  }, [isAuthenticated, progressLoading, progressSummary]);
+
+  const hero = useMemo(() => {
+    if (!isAuthenticated) return HOMEPAGE_HERO;
+    return {
+      ...HOMEPAGE_HERO,
+      badge: memberFirstName ? `Chào mừng quay lại, ${memberFirstName} 👋` : 'Chào mừng quay lại 👋',
+      title: 'Tiếp tục chinh phục',
+      highlight: 'tiếng Nhật.',
+      description:
+        'Vào khu học tập để làm bài, ôn Kanji và xem tiến độ — nội dung bên dưới vẫn giúp bạn nhớ vì sao YumeGo-ji khác biệt.',
+      primaryCta: 'Tiếp tục học',
+      secondaryCta: 'Vào Dashboard',
+    };
+  }, [isAuthenticated, memberFirstName]);
+
+  /** Anchor trong URL (/#method, …) — cuộn tới section sau khi SPA đã render (khách / link từ footer). */
+  useEffect(() => {
+    if (location.pathname !== ROUTES.HOME) return;
+    const id = (location.hash || '').replace(/^#/, '').trim();
+    if (!id) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    const frame = requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [location.pathname, location.hash]);
+
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll('.sn-reveal'));
     if (!nodes.length) return undefined;
@@ -35,18 +177,30 @@ export default function Homepage() {
       <section className="sn-hero sn-reveal is-visible">
         <div className="sn-container sn-hero__grid">
           <div className="sn-hero__content sn-reveal is-visible">
-            <span className="sn-hero__badge">{HOMEPAGE_HERO.badge}</span>
+            <span className="sn-hero__badge">{hero.badge}</span>
             <h1 className="sn-hero__title">
-              {HOMEPAGE_HERO.title} <span className="sn-hero__accent">{HOMEPAGE_HERO.highlight}</span>
+              {hero.title} <span className="sn-hero__accent">{hero.highlight}</span>
             </h1>
-            <p className="sn-hero__desc">{HOMEPAGE_HERO.description}</p>
+            <p className="sn-hero__desc">{hero.description}</p>
             <div className="sn-hero__cta">
-              <Link to={ROUTES.REGISTER} className="btn btn--primary btn--lg sn-btn--gradient">
-                {HOMEPAGE_HERO.primaryCta}
-              </Link>
-              <a href="#method" className="btn btn--outline btn--lg sn-btn--soft">
-                {HOMEPAGE_HERO.secondaryCta}
-              </a>
+              {isAuthenticated ? (
+                <Link to={ROUTES.LEARN} className="btn btn--primary btn--lg sn-btn--gradient">
+                  {hero.primaryCta}
+                </Link>
+              ) : (
+                <Link to={ROUTES.REGISTER} className="btn btn--primary btn--lg sn-btn--gradient">
+                  {hero.primaryCta}
+                </Link>
+              )}
+              {isAuthenticated ? (
+                <Link to={ROUTES.DASHBOARD} className="btn btn--outline btn--lg sn-btn--soft">
+                  {hero.secondaryCta}
+                </Link>
+              ) : (
+                <a href="#method" className="btn btn--outline btn--lg sn-btn--soft">
+                  {hero.secondaryCta}
+                </a>
+              )}
             </div>
           </div>
 
@@ -54,7 +208,7 @@ export default function Homepage() {
             <div className="sn-visual-blob" aria-hidden="true" />
             <div className="sn-visual-card sn-visual-card--tilt">
               <div className="sn-visual-frame">
-                <img className="sn-visual-img" src={HOMEPAGE_HERO.image} alt="Hình minh họa Nhật Bản" loading="lazy" />
+                <img className="sn-visual-img" src={hero.image} alt="Hình minh họa Nhật Bản" loading="lazy" />
               </div>
               <div className="sn-visual-float sn-visual-float--metric">
                 <div className="sn-visual-float__icon" aria-hidden="true">
@@ -101,8 +255,29 @@ export default function Homepage() {
                   </svg>
                 </div>
                 <div>
-                  <div className="sn-visual-float__label">{HOMEPAGE_HERO.metricLabel}</div>
-                  <div className="sn-visual-float__value">{HOMEPAGE_HERO.metricValue}</div>
+                  <div className="sn-visual-float__label">
+                    {isAuthenticated ? progressFloat?.label ?? 'Tóm tắt học tập' : HOMEPAGE_HERO.metricLabel}
+                  </div>
+                  {isAuthenticated && progressFloat ? (
+                    <>
+                      <div
+                        className={`sn-visual-float__value${progressFloat.muted ? ' sn-visual-float__value--muted' : ''}`}
+                      >
+                        {progressFloat.value}
+                      </div>
+                      {typeof progressFloat.pct === 'number' ? (
+                        <div className="sn-visual-float__track" role="progressbar" aria-valuenow={progressFloat.pct} aria-valuemin={0} aria-valuemax={100}>
+                          <span className="sn-visual-float__fill" style={{ width: `${progressFloat.pct}%` }} />
+                        </div>
+                      ) : null}
+                      <p className="sn-visual-float__hint">{progressFloat.hint}</p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="sn-visual-float__value">{HOMEPAGE_HERO.metricValue}</div>
+                      <p className="sn-visual-float__hint sn-visual-float__hint--demo">Ví dụ minh họa — không phải tiến độ thật.</p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -177,7 +352,19 @@ export default function Homepage() {
                 </div>
                 <p className="sn-testimonial__quote">“{t.quote}”</p>
                 <div className="sn-testimonial__meta">
-                  <div className="sn-testimonial__avatar" aria-hidden="true" />
+                  <div className="sn-testimonial__avatar">
+                    {t.avatarUrl ? (
+                      <img
+                        className="sn-testimonial__avatar-img"
+                        src={t.avatarUrl}
+                        alt={t.name}
+                        width={44}
+                        height={44}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : null}
+                  </div>
                   <div>
                     <div className="sn-testimonial__name">{t.name}</div>
                     <div className="sn-testimonial__level">{t.level}</div>
@@ -194,10 +381,19 @@ export default function Homepage() {
           <div className="sn-cta__sakura" aria-hidden="true">
             ❀
           </div>
-          <h2 className="sn-cta__title">{HOMEPAGE_CTA.title}</h2>
-          <p className="sn-cta__text sn-cta__text--wide">{HOMEPAGE_CTA.subtitle}</p>
-          <Link to={ROUTES.REGISTER} className="btn btn--inverted btn--lg sn-cta__btn">
-            {HOMEPAGE_CTA.button}
+          <h2 className="sn-cta__title">
+            {isAuthenticated ? 'Sẵn sàng vào bài học tiếp theo?' : HOMEPAGE_CTA.title}
+          </h2>
+          <p className="sn-cta__text sn-cta__text--wide">
+            {isAuthenticated
+              ? 'Tiếp tục từ chỗ bạn dừng — lộ trình và game vẫn ở đây khi bạn cần ôn thêm.'
+              : HOMEPAGE_CTA.subtitle}
+          </p>
+          <Link
+            to={isAuthenticated ? ROUTES.LEARN : ROUTES.REGISTER}
+            className="btn btn--inverted btn--lg sn-cta__btn"
+          >
+            {isAuthenticated ? 'Mở khu học tập' : HOMEPAGE_CTA.button}
           </Link>
         </div>
       </section>

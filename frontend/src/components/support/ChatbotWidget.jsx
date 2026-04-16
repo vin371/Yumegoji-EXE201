@@ -78,13 +78,13 @@ export function ChatbotWidget() {
     <>
       <div className="support-chat-fab-wrap">
         <span className="support-chat-fab__hint">
-          {isAuthenticated ? 'Chatbot & moderator' : 'Chatbot (Khách)'}
+          {isAuthenticated ? 'Trợ lý học tiếng Nhật (AI)' : 'Chatbot (Khách)'}
         </span>
         <button
           type="button"
           className="support-chat-fab"
           aria-expanded={open}
-          aria-label="Chatbot YumeGo-ji và hỗ trợ"
+          aria-label="Trợ lý học tiếng Nhật và hỗ trợ"
           onClick={() => setOpen((o) => !o)}
         >
           <svg className="support-chat-fab__icon" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
@@ -122,9 +122,6 @@ export function ChatbotWidget() {
 
           {isAuthenticated ? (
             <div className="support-chat-panel__member-bar">
-              <p className="support-chat-panel__member-bar__text">
-                Chat trực tiếp với <strong>điều hành viên</strong> (khác chatbot tự động bên dưới).
-              </p>
               <button
                 type="button"
                 className="support-chat-panel__btn support-chat-panel__btn--primary support-chat-panel__member-bar__btn"
@@ -168,11 +165,11 @@ export function ChatbotWidget() {
               Gửi
             </button>
           </div>
-          <p className="support-chat-panel__foot">
-            {isAuthenticated
-              ? 'Ô trên: chat với người (moderator). Khung dưới: chatbot tự động. Chat học viên — vào mục Chat trên menu.'
-              : 'Khách chỉ dùng chatbot tại đây. Đăng ký để mở chat với điều hành viên và chat với học viên khác.'}
-          </p>
+          {!isAuthenticated ? (
+            <p className="support-chat-panel__foot">
+              Khách chỉ dùng chatbot tại đây. Đăng ký để mở chat với điều hành viên và chat với học viên khác.
+            </p>
+          ) : null}
         </aside>
       )}
     </>

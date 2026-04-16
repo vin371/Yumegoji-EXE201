@@ -1,7 +1,7 @@
 import { learnAiApi } from '../api/learnAiApi';
 
 /**
- * AI dùm tôi — gọi backend → Ollama (local). Cần đăng nhập (Member).
+ * Yumegoji AI (Learn) — gọi backend (Ollama khi bật). Cần đăng nhập (Member).
  * @param {{ messages: { role: string; content: string }[]; imagesBase64?: string[] }} body
  */
 export async function postLearnAiChat(body) {
@@ -11,8 +11,9 @@ export async function postLearnAiChat(body) {
 
 /** Trích chữ từ .pdf / .docx / .pptx (server) — Member. */
 export async function extractLearnDocument(file) {
-  const fd = new FormData();
-  fd.append('file', file);
-  const { data } = await learnAiApi.extractDocument(fd);
+  const FormDataCtor = globalThis.FormData;
+  const formData = new FormDataCtor();
+  formData.append('file', file);
+  const { data } = await learnAiApi.extractDocument(formData);
   return data;
 }

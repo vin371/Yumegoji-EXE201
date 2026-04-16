@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
@@ -6,15 +7,42 @@ import yumeLogo from '../assets/yume-logo.png';
 
 const MARKETING_PATHS = [ROUTES.HOME, ROUTES.LOGIN, ROUTES.REGISTER];
 
-function homeHash(hash) {
-  return `${ROUTES.HOME}${hash}`;
+function marketingNavInitials(user, displayName) {
+  const n = String(displayName || '').trim();
+  if (n.length >= 2) return n.slice(0, 2).toUpperCase();
+  const u = user?.username || user?.email || '';
+  return String(u).slice(0, 1).toUpperCase() || 'U';
 }
 
 export function Header() {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const isMarketing = MARKETING_PATHS.includes(location.pathname);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountWrapRef = useRef(null);
+  const displayName = user?.displayName || user?.username || user?.name || user?.email || 'Học viên';
+  const roleNorm = String(user?.role ?? user?.Role ?? 'user').toLowerCase();
+  const isAdminUser = roleNorm === 'admin';
+  const isModeratorUser = roleNorm === 'moderator';
+
+  useEffect(() => {
+    if (!accountOpen) return undefined;
+    function onDocMouseDown(e) {
+      const el = accountWrapRef.current;
+      if (!el || el.contains(e.target)) return;
+      setAccountOpen(false);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') setAccountOpen(false);
+    }
+    document.addEventListener('mousedown', onDocMouseDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocMouseDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [accountOpen]);
 
   if (isMarketing) {
     return (
@@ -26,10 +54,20 @@ export function Header() {
 
         <nav className="layout-header__nav-center" aria-label="Điều hướng chính">
           <Link to={ROUTES.HOME}>Trang chủ</Link>
-          <a href={homeHash('#method')}>Khóa học</a>
-          <a href={homeHash('#why')}>Giới thiệu</a>
-          <a href={homeHash('#testimonials')}>Blog</a>
-          <a href={homeHash('#lien-he')}>Liên hệ</a>
+          {isAuthenticated ? (
+            <Link to={ROUTES.LEARN}>Khóa học</Link>
+          ) : (
+            <Link to={`${ROUTES.HOME}#method`}>Khóa học</Link>
+          )}
+          {isAuthenticated ? (
+            <Link to={`${ROUTES.HOME}#testimonials`}>Blog</Link>
+          ) : (
+            <>
+              <Link to={`${ROUTES.HOME}#why`}>Giới thiệu</Link>
+              <Link to={`${ROUTES.HOME}#testimonials`}>Blog</Link>
+              <Link to={`${ROUTES.HOME}#lien-he`}>Liên hệ</Link>
+            </>
+          )}
         </nav>
 
         <div className="layout-header__actions">
@@ -43,14 +81,87 @@ export function Header() {
             {theme === 'dark' ? '🌙' : '☀️'}
           </button>
           {isAuthenticated ? (
-            <>
-              <Link to={ROUTES.DASHBOARD}>Dashboard</Link>
-              <Link to={ROUTES.CHAT}>Chat</Link>
-              <Link to={ROUTES.ACCOUNT}>Account</Link>
-              <button type="button" onClick={logout} className="layout-header__btn">
-                Đăng xuất
+            <div className="layout-header__account-wrap" ref={accountWrapRef}>
+              <button
+                type="button"
+                className="layout-header__account-trigger"
+                aria-expanded={accountOpen}
+                aria-haspopup="menu"
+                aria-controls="layout-header-account-menu"
+                onClick={() => setAccountOpen((o) => !o)}
+              >
+                <span className="layout-header__account-avatar" aria-hidden>
+                  {marketingNavInitials(user, displayName)}
+                </span>
+                <span className="layout-header__account-label">{displayName}</span>
+                <span className="layout-header__account-chevron" aria-hidden>
+                  ▾
+                </span>
               </button>
-            </>
+              {accountOpen ? (
+                <div
+                  id="layout-header-account-menu"
+                  className="layout-header__account-menu"
+                  role="menu"
+                >
+                  {isAdminUser ? (
+                    <Link
+                      to={ROUTES.ADMIN}
+                      className="layout-header__account-item"
+                      role="menuitem"
+                      onClick={() => setAccountOpen(false)}
+                    >
+                      Quản trị
+                    </Link>
+                  ) : null}
+                  {isModeratorUser ? (
+                    <Link
+                      to={ROUTES.MODERATOR}
+                      className="layout-header__account-item"
+                      role="menuitem"
+                      onClick={() => setAccountOpen(false)}
+                    >
+                      Điều hành
+                    </Link>
+                  ) : null}
+                  <Link
+                    to={ROUTES.DASHBOARD}
+                    className="layout-header__account-item"
+                    role="menuitem"
+                    onClick={() => setAccountOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    to={ROUTES.CHAT}
+                    className="layout-header__account-item"
+                    role="menuitem"
+                    onClick={() => setAccountOpen(false)}
+                  >
+                    Chat
+                  </Link>
+                  <Link
+                    to={ROUTES.ACCOUNT}
+                    className="layout-header__account-item"
+                    role="menuitem"
+                    onClick={() => setAccountOpen(false)}
+                  >
+                    Account
+                  </Link>
+                  <button
+                    type="button"
+                    className="layout-header__account-item layout-header__account-item--danger"
+                    role="menuitem"
+                    onClick={() => {
+                      setAccountOpen(false);
+                      logout();
+                    }}
+                  >
+                    Đăng xuất
+                  </button>
+                </div>
+              ) : null}
+            </div>
           ) : (
             <>
               <Link to={ROUTES.LOGIN} className="layout-header__link-muted">

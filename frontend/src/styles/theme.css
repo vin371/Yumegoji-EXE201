@@ -8,6 +8,15 @@
   flex: 1;
 }
 
+/* Vùng nội dung learner có AnimatePresence (App.jsx) */
+.app-main-motion {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Chat Moji: full viewport, không header/footer site — không cuộn cả trang, chỉ vùng tin nhắn */
 .app.app--chat-full {
   min-height: unset;
@@ -197,6 +206,8 @@ body {
 }
 
 .layout-header {
+  position: relative;
+  z-index: 200;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -371,6 +382,98 @@ html[data-theme='dark'] .layout-header__link-muted {
   justify-self: end;
   min-width: 0;
 }
+.layout-header__account-wrap {
+  position: relative;
+  min-width: 0;
+}
+.layout-header__account-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: min(220px, 38vw);
+  padding: 0.35rem 0.5rem 0.35rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  color: #334155;
+}
+html[data-theme='dark'] .layout-header__account-trigger {
+  background: color-mix(in srgb, var(--bg) 92%, #0f172a 8%);
+  border-color: var(--border);
+  color: var(--text);
+}
+.layout-header__account-trigger:hover {
+  border-color: color-mix(in srgb, #bd0039 35%, rgba(15, 23, 42, 0.1));
+}
+.layout-header__account-avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #bd0039;
+  background: rgba(189, 0, 57, 0.12);
+}
+.layout-header__account-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(0.78rem, 1.2vw, 0.88rem);
+  font-weight: 600;
+  text-align: left;
+}
+.layout-header__account-chevron {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  opacity: 0.65;
+  margin-left: 0.1rem;
+}
+.layout-header__account-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 200px;
+  padding: 0.35rem 0;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #fff;
+  box-shadow: 0 14px 40px -12px rgba(15, 23, 42, 0.22);
+  z-index: 210;
+}
+html[data-theme='dark'] .layout-header__account-menu {
+  background: color-mix(in srgb, var(--bg) 96%, #0f172a 4%);
+  border-color: var(--border);
+  box-shadow: 0 14px 40px -12px rgba(0, 0, 0, 0.45);
+}
+.layout-header__account-item {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 1rem;
+  border: none;
+  background: none;
+  text-align: left;
+  font: inherit;
+  font-size: 0.9rem;
+  color: #334155;
+  text-decoration: none;
+  cursor: pointer;
+}
+html[data-theme='dark'] .layout-header__account-item {
+  color: var(--text);
+}
+.layout-header__account-item:hover {
+  background: rgba(189, 0, 57, 0.06);
+  color: #bd0039;
+}
+.layout-header__account-item--danger {
+  color: #bd0039 !important;
+  font-weight: 600;
+}
 .layout-header__link-muted {
   color: #475569 !important;
   text-decoration: none;
@@ -437,7 +540,8 @@ html[data-theme='dark'] .layout-header__link-muted {
 }
 .footer-desc {
   margin: 0 0 1rem;
-  color: #64748b;
+  color: #475569;
+  font-weight: 600;
   max-width: 360px;
 }
 .footer-title {
@@ -464,11 +568,23 @@ html[data-theme='dark'] .layout-header__link-muted {
   align-items: center;
 }
 .footer-social__dot {
+  display: block;
+  flex-shrink: 0;
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  background: #ffffff;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #f1f5f9;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+.footer-social__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
 }
 .footer-bottom {
   display: flex;
@@ -500,7 +616,7 @@ html[data-theme='dark'] .footer-link:hover {
   color: #fda4af;
 }
 html[data-theme='dark'] .footer-social__dot {
-  background: rgba(2, 6, 23, 0.45);
+  background: rgba(15, 23, 42, 0.6);
   border-color: rgba(226, 232, 240, 0.15);
 }
 html[data-theme='dark'] .footer-bottom {
