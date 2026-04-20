@@ -21,6 +21,8 @@ import {
   submitGameAnswer,
   postInventoryPowerUp,
 } from '../../services/gameService';
+import { pickRandomKanaCombatSprites } from '../../assets/kanaCombatSprites';
+import { pickRandomKanaCombatBackdrop } from '../../assets/kanaCombatBackdrops';
 
 const Motion = motion;
 
@@ -169,19 +171,219 @@ const MAX_KANA_QUESTIONS = 46;
 /** Đồng bộ với PlayExpBar — làm mới EXP sau khi kết thúc phiên API */
 const YUME_PLAY_EXP_REFRESH = 'yume-play-exp-refresh';
 
-/** Chiến trường quiz Kana (phương án A): luân phiên theo chỉ số câu */
-const KANA_BATTLEFIELD_KEYS = ['sakura', 'bamboo', 'temple', 'snow'];
-
-function kanaBattlefieldAt(index) {
-  const n = Math.floor(Number(index)) || 0;
-  return KANA_BATTLEFIELD_KEYS[((n % 4) + 4) % 4];
-}
-
 function syncKanaBattleAnim(kana, correct, powerUpUsed, setAnim) {
   if (!kana) return;
   if (powerUpUsed === 'skip') setAnim('idle');
   else if (correct) setAnim('player');
   else setAnim('enemy');
+}
+
+const KANA_COMBAT_DMG = 35;
+const KANA_COMBAT_KILL = 25;
+const KANA_COMBAT_WIN = 100;
+const KANA_ENEMY_HP_MAX = 100;
+
+function computeKanaCombatAfterCorrect(prev) {
+  const nh = Math.max(0, prev.enemyHp - KANA_COMBAT_DMG);
+  const killed = nh === 0;
+  return {
+    enemyHp: killed ? KANA_ENEMY_HP_MAX : nh,
+    score: killed ? prev.score + KANA_COMBAT_KILL : prev.score,
+    killed,
+  };
+}
+
+function kanaFirstChar(text) {
+  const t = String(text || '').trim();
+  if (!t) return 'あ';
+  const arr = [...t];
+  return arr[0] || 'あ';
+}
+
+/** Nền + thanh HP + sprite + FX chém / cầu (đồng bộ state với màn kana). */
+function ArcadeDuelSceneBanner({
+  backdropSrc,
+  playerHpPct,
+  rightHpPct,
+  enemyLabel,
+  ninjaSrc,
+  ghostSrc,
+  bubbleChar,
+  slashFx,
+  orbFx,
+  screenTint,
+}) {
+  if (!backdropSrc || !ninjaSrc || !ghostSrc) return null;
+  const bubble = bubbleChar || '？';
+  const fxClass = `${slashFx ? ' play-kana-battle--fx-slash' : ''}${orbFx ? ' play-kana-battle--fx-orb' : ''}${
+    screenTint ? ` play-kana-battle--tint-${screenTint}` : ''
+  }`;
+  return (
+    <section
+      className={`play-kana-battle play-kana-battle--arcade play-kana-battle--sprites play-kana-battle--dynamic-temple play-kana-battle--has-photo-bg play-kana-battle--scene-banner${fxClass}`}
+      data-anim="idle"
+      data-strike="slash"
+      aria-label="Khung đấu: Samurai Hiro và đối thủ"
+    >
+      <div
+        className="play-kana-battle__backdrop-img"
+        style={{ backgroundImage: `url(${backdropSrc})` }}
+        aria-hidden
+      />
+      <div className="play-kana-battle__backdrop-tones" aria-hidden />
+      <div className="play-kana-battle__petals" aria-hidden />
+      <div className="play-kana-battle__fx" aria-hidden>
+        <div className="play-kana-battle__slash-sweep" />
+        <div className="play-kana-battle__slash-arc" />
+        <div className="play-kana-battle__slash-flash" />
+        <div className="play-kana-battle__kunai" />
+        <div className="play-kana-battle__energy-orb" />
+      </div>
+      <div className="play-kana-battle__strip play-kana-battle__strip--glass" aria-hidden>
+        <div className="play-kana-battle__hp play-kana-battle__hp--player">
+          <span className="play-kana-battle__hp-label">Samurai Hiro</span>
+          <span className="play-kana-battle__hp-track">
+            <span
+              className="play-kana-battle__hp-fill play-kana-battle__hp-fill--player"
+              style={{ width: `${playerHpPct}%` }}
+            />
+          </span>
+        </div>
+        <div className="play-kana-battle__hp play-kana-battle__hp--enemy">
+          <span className="play-kana-battle__hp-label">{enemyLabel}</span>
+          <span className="play-kana-battle__hp-track">
+            <span
+              className="play-kana-battle__hp-fill play-kana-battle__hp-fill--enemy"
+              style={{ width: `${rightHpPct}%` }}
+            />
+          </span>
+        </div>
+      </div>
+      <div className="play-kana-battle__stage">
+        <div className="play-kana-battle__actor play-kana-battle__ninja-wrap">
+          <div className="play-kana-battle__actor-label visually-hidden">Samurai Hiro</div>
+          <div className="play-kana-battle__ninja-outer">
+            <div className="play-kana-battle__ninja">
+              <img src={ninjaSrc} alt="" className="play-kana-battle__ninja-img" width={220} height={220} />
+              <div className="play-kana-battle__palm-burst" aria-hidden />
+              <div className="play-kana-battle__ninja-sword" aria-hidden />
+            </div>
+          </div>
+        </div>
+        <div className="play-kana-battle__actor play-kana-battle__yurei-wrap">
+          <div className="play-kana-battle__bubble" lang="ja">
+            {bubble}
+          </div>
+          <div className="play-kana-battle__actor-label visually-hidden">{enemyLabel}</div>
+          <div className="play-kana-battle__yurei-outer">
+            <div className="play-kana-battle__ghost-palm-burst" aria-hidden />
+            <div className="play-kana-battle__yurei">
+              <img src={ghostSrc} alt="" className="play-kana-battle__ghost-img" width={220} height={220} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Vùng Ninja vs Yurei — sprite + đền cổ + hoa đào + combat FX */
+function KanaNinjaYureiArena({
+  anim,
+  playerHpPct,
+  enemyHpPct,
+  kanaChar,
+  strikeKind,
+  slashFx,
+  orbFx,
+  screenTint,
+  floats,
+  ninjaSrc,
+  ghostSrc,
+  backdropSrc,
+}) {
+  const fxClass = `${slashFx ? ' play-kana-battle--fx-slash' : ''}${orbFx ? ' play-kana-battle--fx-orb' : ''}${
+    screenTint ? ` play-kana-battle--tint-${screenTint}` : ''
+  }`;
+  const photoBgClass = backdropSrc ? ' play-kana-battle--has-photo-bg' : '';
+  return (
+    <section
+      className={`play-kana-battle play-kana-battle--arcade play-kana-battle--sprites play-kana-battle--dynamic-temple${photoBgClass}${fxClass}`}
+      aria-label={`Chiến trường: đúng thì Hiro chém Moku −${KANA_COMBAT_DMG} HP, đạt ${KANA_COMBAT_WIN} điểm thắng; sai hoặc hết giờ mất tim.`}
+      data-anim={anim}
+      data-strike={strikeKind}
+    >
+      {backdropSrc ? (
+        <>
+          <div
+            className="play-kana-battle__backdrop-img"
+            style={{ backgroundImage: `url(${backdropSrc})` }}
+            aria-hidden
+          />
+          <div className="play-kana-battle__backdrop-tones" aria-hidden />
+        </>
+      ) : null}
+      <div className="play-kana-battle__petals" aria-hidden />
+      <div className="play-kana-battle__fx" aria-hidden>
+        <div className="play-kana-battle__slash-sweep" />
+        <div className="play-kana-battle__slash-arc" />
+        <div className="play-kana-battle__slash-flash" />
+        <div className="play-kana-battle__kunai" />
+        <div className="play-kana-battle__energy-orb" />
+      </div>
+      <ul className="play-kana-battle__floats" aria-hidden>
+        {floats.map((f) => (
+          <li key={f.id} className={`play-kana-battle__float play-kana-battle__float--${f.tone}`}>
+            {f.text}
+          </li>
+        ))}
+      </ul>
+      <div className="play-kana-battle__strip play-kana-battle__strip--glass" aria-hidden>
+        <div className="play-kana-battle__hp play-kana-battle__hp--player">
+          <span className="play-kana-battle__hp-label">Samurai Hiro</span>
+          <span className="play-kana-battle__hp-track">
+            <span
+              className="play-kana-battle__hp-fill play-kana-battle__hp-fill--player"
+              style={{ width: `${playerHpPct}%` }}
+            />
+          </span>
+        </div>
+        <div className="play-kana-battle__hp play-kana-battle__hp--enemy">
+          <span className="play-kana-battle__hp-label">Moku Spirit</span>
+          <span className="play-kana-battle__hp-track">
+            <span
+              className="play-kana-battle__hp-fill play-kana-battle__hp-fill--enemy"
+              style={{ width: `${enemyHpPct}%` }}
+            />
+          </span>
+        </div>
+      </div>
+      <div className="play-kana-battle__stage">
+        <div className="play-kana-battle__actor play-kana-battle__ninja-wrap">
+          <div className="play-kana-battle__actor-label visually-hidden">Samurai Hiro</div>
+          <div className="play-kana-battle__ninja-outer">
+            <div className="play-kana-battle__ninja">
+              <img src={ninjaSrc} alt="" className="play-kana-battle__ninja-img" width={220} height={220} />
+              <div className="play-kana-battle__palm-burst" aria-hidden />
+              <div className="play-kana-battle__ninja-sword" aria-hidden />
+            </div>
+          </div>
+        </div>
+        <div className="play-kana-battle__actor play-kana-battle__yurei-wrap">
+          <div className="play-kana-battle__bubble" lang="ja">
+            {kanaChar}
+          </div>
+          <div className="play-kana-battle__actor-label visually-hidden">Moku Spirit</div>
+          <div className="play-kana-battle__yurei-outer">
+            <div className="play-kana-battle__ghost-palm-burst" aria-hidden />
+            <div className="play-kana-battle__yurei">
+              <img src={ghostSrc} alt="" className="play-kana-battle__ghost-img" width={220} height={220} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function optionCellLabel(o) {
@@ -262,10 +464,10 @@ function normalizeApiQuestions(list) {
   });
 }
 
-/** Hira/Kata 10s, Vocab Speed 8s; Sentence Builder cần thời gian kéo thả chip. */
+/** Hira/Kata 8s (combat), Vocab Speed 8s; Sentence Builder cần thời gian kéo thả chip. */
 function clientTimePerQuestionSeconds(slug, serverSeconds) {
   const s = String(slug || '').replace(/_/g, '-').toLowerCase();
-  if (s === 'hiragana-match' || s === 'katakana-match') return 10;
+  if (s === 'hiragana-match' || s === 'katakana-match') return 8;
   if (s === 'vocabulary-speed-quiz') return 8;
   if (s === 'sentence-builder') {
     const t = Number(serverSeconds);
@@ -278,7 +480,8 @@ function clientTimePerQuestionSeconds(slug, serverSeconds) {
 }
 
 function getArcadeTheme(slug) {
-  const s = String(slug || '').toLowerCase();
+  const s = String(slug || '').replace(/_/g, '-').toLowerCase();
+  if (s === 'hiragana-match' || s === 'katakana-match') return 'kana';
   if (s === 'boss-battle') return 'boss';
   if (s === 'vocabulary-speed-quiz') return 'speed';
   if (s === 'sentence-builder') return 'sentence';
@@ -360,8 +563,10 @@ function apiErrorMessage(e) {
 }
 
 function arcadeDisplayTitle(slug, metaName) {
-  const s = String(slug || '').toLowerCase();
+  const s = String(slug || '').replace(/_/g, '-').toLowerCase();
   const map = {
+    'hiragana-match': '🥷 HIRAGANA MATCH',
+    'katakana-match': '🥷 KATAKANA MATCH',
     'boss-battle': '⚔️ BOSS BATTLE',
     'vocabulary-speed-quiz': 'VOCABULARY SPEED QUIZ',
     'sentence-builder': 'SENTENCE BUILDER',
@@ -413,10 +618,7 @@ export default function KanaMatchGame() {
 
   const slugOk = Boolean(String(gameSlug || '').trim());
   const kanaGame = isKanaGameSlug(apiGameSlug);
-  const arcadeTheme = useMemo(
-    () => (kanaGame ? null : getArcadeTheme(apiGameSlug)),
-    [kanaGame, apiGameSlug],
-  );
+  const arcadeTheme = useMemo(() => getArcadeTheme(apiGameSlug), [apiGameSlug]);
   const useArcadeShell = Boolean(arcadeTheme);
 
   const [bossHp, setBossHp] = useState(400);
@@ -427,8 +629,17 @@ export default function KanaMatchGame() {
   const [showSentenceHint, setShowSentenceHint] = useState(false);
   const sentenceExpectedRef = useRef(0);
   const sentenceChipGenRef = useRef(0);
-  /** idle | player | enemy — chỉ dùng khi kanaGame + đang chơi */
+  /** idle | player | enemy — Hiragana/Katakana (theme arcade kana) */
   const [kanaBattleAnim, setKanaBattleAnim] = useState('idle');
+  /** HP Yurei xuyên các câu; điểm trận cộng khi hạ (hết HP) */
+  const [kanaStrike, setKanaStrike] = useState({ enemyHp: KANA_ENEMY_HP_MAX, score: 0 });
+  const kanaCombatRef = useRef({ enemyHp: KANA_ENEMY_HP_MAX, score: 0 });
+  const [kanaFxSlash, setKanaFxSlash] = useState(false);
+  const [kanaFxOrb, setKanaFxOrb] = useState(false);
+  const [kanaScreenTint, setKanaScreenTint] = useState('');
+  const [kanaFloats, setKanaFloats] = useState([]);
+  const [kanaSprites, setKanaSprites] = useState(() => pickRandomKanaCombatSprites());
+  const [kanaCombatBackdrop, setKanaCombatBackdrop] = useState(() => pickRandomKanaCombatBackdrop());
 
   const qCurrent = questions[index] ?? null;
   const sentenceCanonKey = useMemo(() => {
@@ -447,8 +658,8 @@ export default function KanaMatchGame() {
       setIndex(0);
       setMaxHearts(3);
       setHeartsRemaining(3);
-      setTimePerQ(10);
-      setSecondsLeft(10);
+      setTimePerQ(8);
+      setSecondsLeft(8);
       setTotalScore(0);
       setCombo(0);
       setFeedback(null);
@@ -459,6 +670,14 @@ export default function KanaMatchGame() {
       apiCorrectRef.current = 0;
       setDoubleArmed(false);
       pendingDoubleRef.current = false;
+      kanaCombatRef.current = { enemyHp: KANA_ENEMY_HP_MAX, score: 0 };
+      setKanaStrike({ enemyHp: KANA_ENEMY_HP_MAX, score: 0 });
+      setKanaFloats([]);
+      setKanaFxSlash(false);
+      setKanaFxOrb(false);
+      setKanaScreenTint('');
+      setKanaSprites(pickRandomKanaCombatSprites());
+      setKanaCombatBackdrop(pickRandomKanaCombatBackdrop());
       setPhase('playing');
       questionStartRef.current = Date.now();
     },
@@ -506,6 +725,17 @@ export default function KanaMatchGame() {
       window.dispatchEvent(new Event(YUME_PLAY_EXP_REFRESH));
     }
   }, [phase, summary]);
+
+  useEffect(() => {
+    if (phase !== 'setup') return;
+    kanaCombatRef.current = { enemyHp: KANA_ENEMY_HP_MAX, score: 0 };
+    setKanaStrike({ enemyHp: KANA_ENEMY_HP_MAX, score: 0 });
+    setKanaFloats([]);
+    setKanaFxSlash(false);
+    setKanaFxOrb(false);
+    setKanaScreenTint('');
+    setKanaBattleAnim('idle');
+  }, [phase]);
 
   const beginGame = useCallback(async () => {
     if (!slugOk) {
@@ -572,8 +802,23 @@ export default function KanaMatchGame() {
       pendingDoubleRef.current = false;
       setPhase('playing');
       questionStartRef.current = Date.now();
-      if (getArcadeTheme(apiGameSlug) === 'boss') setBossHp(400);
-      if (getArcadeTheme(apiGameSlug) === 'vsbot') setBotScore(200);
+      const startedArcadeTheme = getArcadeTheme(apiGameSlug);
+      if (startedArcadeTheme) {
+        setKanaCombatBackdrop(pickRandomKanaCombatBackdrop());
+        setKanaFxSlash(false);
+        setKanaFxOrb(false);
+        setKanaScreenTint('');
+      }
+      if (startedArcadeTheme === 'boss') setBossHp(400);
+      if (startedArcadeTheme === 'vsbot') setBotScore(200);
+      if (startedArcadeTheme === 'kana') {
+        kanaCombatRef.current = { enemyHp: KANA_ENEMY_HP_MAX, score: 0 };
+        setKanaStrike({ enemyHp: KANA_ENEMY_HP_MAX, score: 0 });
+        setKanaFloats([]);
+        setKanaSprites(pickRandomKanaCombatSprites());
+      } else if (startedArcadeTheme) {
+        setKanaSprites(pickRandomKanaCombatSprites());
+      }
       try {
         setInventory(await fetchGameInventory());
       } catch {
@@ -677,6 +922,32 @@ export default function KanaMatchGame() {
     }
   }, []);
 
+  const pushKanaFloat = useCallback((text, tone) => {
+    const id = `kf-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    setKanaFloats((f) => [...f, { id, text, tone }]);
+    window.setTimeout(() => {
+      setKanaFloats((f) => f.filter((x) => x.id !== id));
+    }, 950);
+  }, []);
+
+  const pulseKanaSlash = useCallback(() => {
+    setKanaFxSlash(true);
+    setKanaScreenTint('white');
+    window.setTimeout(() => {
+      setKanaFxSlash(false);
+      setKanaScreenTint('');
+    }, 520);
+  }, []);
+
+  const pulseKanaOrb = useCallback(() => {
+    setKanaFxOrb(true);
+    setKanaScreenTint('red');
+    window.setTimeout(() => {
+      setKanaFxOrb(false);
+      setKanaScreenTint('');
+    }, 480);
+  }, []);
+
   const handlePick = useCallback(
     async (chosenIndex, explicitPowerUp = null) => {
       if (phase !== 'playing') {
@@ -751,6 +1022,66 @@ export default function KanaMatchGame() {
           });
 
           syncKanaBattleAnim(kanaGame, correct, powerUpUsed, setKanaBattleAnim);
+
+          if (arcadeTheme === 'kana' && powerUpUsed !== 'skip') {
+            if (correct) {
+              const nextCombat = computeKanaCombatAfterCorrect(kanaCombatRef.current);
+              kanaCombatRef.current = nextCombat;
+              setKanaStrike({ enemyHp: nextCombat.enemyHp, score: nextCombat.score });
+              pushKanaFloat(`-${KANA_COMBAT_DMG}`, 'dmg');
+              if (nextCombat.killed) pushKanaFloat(`+${KANA_COMBAT_KILL}`, 'bonus');
+              pulseKanaSlash();
+              if (nextCombat.score >= KANA_COMBAT_WIN) {
+                if (timerRef.current) clearInterval(timerRef.current);
+                timerRef.current = null;
+                try {
+                  const end = await endGameSession(sessionId);
+                  try {
+                    await refreshInventory();
+                  } catch {
+                    /* ignore */
+                  }
+                  setSummary({
+                    mode: 'api',
+                    payload: end,
+                    kanaVictory: true,
+                    combatScore: nextCombat.score,
+                    lostAllHearts: false,
+                  });
+                } catch {
+                  try {
+                    await refreshInventory();
+                  } catch {
+                    /* ignore */
+                  }
+                  setSummary({
+                    mode: 'api',
+                    kanaVictory: true,
+                    combatScore: nextCombat.score,
+                    lostAllHearts: false,
+                    payload: {
+                      finalScore: score,
+                      correctCount: apiCorrectRef.current,
+                      totalQuestions: questions.length,
+                    },
+                  });
+                }
+                setPhase('summary');
+                busyRef.current = false;
+                return;
+              }
+            } else {
+              pulseKanaOrb();
+            }
+          }
+
+          if (arcadeTheme && arcadeTheme !== 'kana' && powerUpUsed !== 'skip') {
+            if (correct) {
+              pulseKanaSlash();
+            } else {
+              pulseKanaOrb();
+            }
+          }
 
           if (arcadeTheme === 'boss' && correct) {
             setBossHp((h) =>
@@ -829,6 +1160,29 @@ export default function KanaMatchGame() {
 
       syncKanaBattleAnim(kanaGame, correct, powerUpUsed, setKanaBattleAnim);
 
+      let kanaCombatVictory = false;
+      if (arcadeTheme === 'kana' && powerUpUsed !== 'skip') {
+        if (correct) {
+          const nextCombat = computeKanaCombatAfterCorrect(kanaCombatRef.current);
+          kanaCombatRef.current = nextCombat;
+          setKanaStrike({ enemyHp: nextCombat.enemyHp, score: nextCombat.score });
+          pushKanaFloat(`-${KANA_COMBAT_DMG}`, 'dmg');
+          if (nextCombat.killed) pushKanaFloat(`+${KANA_COMBAT_KILL}`, 'bonus');
+          pulseKanaSlash();
+          if (nextCombat.score >= KANA_COMBAT_WIN) kanaCombatVictory = true;
+        } else {
+          pulseKanaOrb();
+        }
+      }
+
+      if (arcadeTheme && arcadeTheme !== 'kana' && powerUpUsed !== 'skip') {
+        if (correct) {
+          pulseKanaSlash();
+        } else {
+          pulseKanaOrb();
+        }
+      }
+
       let nextHearts = heartsRemaining;
       let nextCorrect = localCorrect;
       if (correct) {
@@ -844,6 +1198,23 @@ export default function KanaMatchGame() {
       const finalLocalScore =
         totalQ > 0 ? Math.min(100, Math.round((nextCorrect / totalQ) * 100)) : 0;
       const localHeartsOut = nextHearts <= 0;
+
+      if (kanaCombatVictory) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setSummary({
+          mode: 'local',
+          kanaVictory: true,
+          combatScore: kanaCombatRef.current.score,
+          finalScore: 100,
+          correctCount: nextCorrect,
+          totalQuestions: totalQ,
+          heartsRemaining: nextHearts,
+          lostAllHearts: false,
+        });
+        setPhase('summary');
+        busyRef.current = false;
+        return;
+      }
 
       if (nextHearts <= 0 || last) {
         if (timerRef.current) clearInterval(timerRef.current);
@@ -879,6 +1250,9 @@ export default function KanaMatchGame() {
       kanaGame,
       arcadeTheme,
       refreshInventory,
+      pushKanaFloat,
+      pulseKanaSlash,
+      pulseKanaOrb,
     ],
   );
 
@@ -1018,7 +1392,7 @@ export default function KanaMatchGame() {
   if (phase === 'setup') {
     const setupTitle = arcadeDisplayTitle(apiGameSlug, gameMeta?.name ?? gameMeta?.Name);
     const setupShell = useArcadeShell
-      ? `play-game play-game--setup play-game--arcade play-arcade--${arcadeTheme}`
+      ? `play-game play-game--setup play-game--arcade play-arcade-shell--light play-arcade--${arcadeTheme}`
       : 'play-game play-game--setup';
     const hasQSelect =
       kanaGame ||
@@ -1208,7 +1582,7 @@ export default function KanaMatchGame() {
 
   if (phase === 'loading') {
     const loadShell = useArcadeShell
-      ? `play-game play-game--center play-game--arcade play-arcade--${arcadeTheme}`
+      ? `play-game play-game--center play-game--arcade play-arcade-shell--light play-arcade--${arcadeTheme}`
       : 'play-game play-game--center';
     return (
       <div className={loadShell}>
@@ -1234,14 +1608,29 @@ export default function KanaMatchGame() {
     const exp = p.expEarned ?? p.ExpEarned;
     const xu = p.xuEarned ?? p.XuEarned;
     const sumShell = useArcadeShell
-      ? `play-game play-summary play-game--arcade play-arcade--${arcadeTheme} play-summary--arcade`
+      ? `play-game play-summary play-game--arcade play-arcade-shell--light play-arcade--${arcadeTheme} play-summary--arcade`
       : 'play-game play-summary';
+    const kanaVictory = summary.kanaVictory === true;
     return (
       <div className={sumShell}>
-        <h1 className="play-summary__title">Kết thúc</h1>
+        <h1 className="play-summary__title">
+          {kanaVictory ? 'CHIẾN THẮNG' : ranOutOfHearts ? 'THUA' : 'Kết thúc'}
+        </h1>
         <p className="play-summary__score">
-          Điểm: {score}/100
+          {kanaVictory ? (
+            <>
+              Điểm trận: {summary.combatScore ?? p.combatScore ?? score}/{KANA_COMBAT_WIN}
+            </>
+          ) : (
+            <>Điểm: {score}/100</>
+          )}
         </p>
+        {kanaVictory ? (
+          <p className="play-summary__line">
+            Bạn đạt {KANA_COMBAT_WIN} điểm trận — hạ Yurei liên tiếp (mỗi lần hạ +{KANA_COMBAT_KILL}, mỗi đòn đúng −
+            {KANA_COMBAT_DMG} HP).
+          </p>
+        ) : null}
         {ranOutOfHearts ? (
           <p className="play-summary__line play-summary__line--hearts">
             Bạn đã hết mạng — phiên kết thúc sớm. <strong>Điểm, EXP và Xu</strong> vẫn theo số câu đúng và điểm đã ghi
@@ -1292,7 +1681,6 @@ export default function KanaMatchGame() {
   }
 
   const q = questions[index];
-  const kanaBattlefield = kanaGame ? kanaBattlefieldAt(index) : '';
   const title = useArcadeShell
     ? arcadeDisplayTitle(apiGameSlug, gameMeta?.name ?? gameMeta?.Name)
     : gameMeta?.name ?? gameMeta?.Name ?? prettyTitleFromSlug(gameSlug);
@@ -1303,14 +1691,33 @@ export default function KanaMatchGame() {
     : totalQPlaying > 0
       ? Math.min(100, Math.round((localCorrect / totalQPlaying) * 100))
       : 0;
+  const arcadeKanaHeaderScore = arcadeTheme === 'kana' ? kanaStrike.score : displayScore;
 
   const { main: qMain, sub: qSub } = splitQuestionDisplay(q?.questionText ?? '');
   const showSentenceUI = Boolean(
     useArcadeShell && arcadeTheme === 'sentence' && q && isSentenceChipQuestion(q) && sentenceCanonKey,
   );
-  const progressPct =
+  const progressPctBase =
     totalQPlaying > 0 ? Math.min(100, ((index + 1) / totalQPlaying) * 100) : 0;
+  const progressPct =
+    arcadeTheme === 'kana'
+      ? Math.min(100, (kanaStrike.score / KANA_COMBAT_WIN) * 100)
+      : progressPctBase;
   const playerHpPct = maxHearts > 0 ? Math.round((heartsRemaining / maxHearts) * 100) : 100;
+  const enemyHpPct =
+    arcadeTheme === 'kana' ? Math.round((kanaStrike.enemyHp / KANA_ENEMY_HP_MAX) * 100) : 100;
+  const sceneRightHpPct =
+    arcadeTheme === 'boss'
+      ? Math.min(100, Math.round((bossHp / 400) * 100))
+      : arcadeTheme === 'vsbot'
+        ? Math.min(100, Math.round((botScore / 360) * 100))
+        : Math.max(0, 100 - Math.round(progressPctBase));
+  const sceneEnemyLabel =
+    arcadeTheme === 'boss' ? '鬼 Oni' : arcadeTheme === 'vsbot' ? 'Bot 🤖' : 'Moku Spirit';
+  const duelBubbleChar = q ? kanaFirstChar(q.questionText) : '？';
+  /** Luôn chém (sprite ẩn kiếm) + FX kunai/vệt lưỡi thay vì luân phiên palm */
+  const kanaStrikeKind = 'slash';
+  const kanaBubbleChar = q ? kanaFirstChar(q.questionText) : 'あ';
 
   const arcadeMidPrompt =
     arcadeTheme === 'speed'
@@ -1417,7 +1824,7 @@ export default function KanaMatchGame() {
 
   if (useArcadeShell) {
     return (
-      <div className={`play-game play-game--arcade play-arcade--${arcadeTheme}`}>
+      <div className={`play-game play-game--arcade play-arcade-shell--light play-arcade--${arcadeTheme}`}>
         <header className="play-arcade__header">
           <div className="play-arcade__header-row">
             <div className="play-arcade__header-left">
@@ -1426,6 +1833,9 @@ export default function KanaMatchGame() {
               </Link>
               {arcadeTheme === 'daily' ? (
                 <span className="play-arcade__pill play-arcade__pill--daily">📅 DAILY</span>
+              ) : null}
+              {arcadeTheme === 'kana' ? (
+                <span className="play-arcade__pill play-arcade__pill--kana">⚔️ VS</span>
               ) : null}
               <h1 className="play-arcade__title">{title}</h1>
             </div>
@@ -1443,7 +1853,7 @@ export default function KanaMatchGame() {
               ) : (
                 <>
                   <span className="play-arcade__star-score" aria-label="điểm">
-                    <span aria-hidden>⭐</span> {displayScore}
+                    <span aria-hidden>⭐</span> {arcadeKanaHeaderScore}
                     {arcadeTheme !== 'vsbot' ? (
                       <span className="play-arcade__score-suffix">/100</span>
                     ) : null}
@@ -1470,7 +1880,9 @@ export default function KanaMatchGame() {
               )}
             </div>
           </div>
-          <div className="play-arcade__progress-row">
+          <div
+            className={`play-arcade__progress-row${arcadeTheme === 'kana' ? ' play-arcade__progress-row--kana-glass' : ''}`}
+          >
             <div
               className={`play-arcade__progress-fill ${arcadeTheme === 'vsbot' ? 'play-arcade__progress-fill--pink' : ''}`}
               style={{ width: `${progressPct}%` }}
@@ -1484,21 +1896,48 @@ export default function KanaMatchGame() {
               {feedback ? '—' : `⏱ ${secondsLeft}s`}
             </span>
           </div>
-          {arcadeTheme === 'speed' && !feedback ? (
+          {(arcadeTheme === 'speed' || arcadeTheme === 'kana') && !feedback ? (
             <div className="play-arcade__timer-hero" aria-hidden>
               Còn <strong>{secondsLeft}</strong> giây
             </div>
           ) : null}
           {combo > 1 ? <div className="play-arcade__combo">Combo ×{combo}</div> : null}
-          {arcadeTheme === 'vsbot' ? (
-            <p className="play-arcade__bot-hint">
-              Bot mô phỏng ~70% “trúng” mỗi câu (điểm bot tăng ngẫu nhiên theo tỷ lệ đó, độc lập với bạn).
-            </p>
-          ) : null}
         </header>
 
         {error ? <div className="play-arcade__err">{error}</div> : null}
         {powerUpBar}
+
+        {arcadeTheme && arcadeTheme !== 'kana' && kanaCombatBackdrop ? (
+          <ArcadeDuelSceneBanner
+            backdropSrc={kanaCombatBackdrop}
+            playerHpPct={playerHpPct}
+            rightHpPct={sceneRightHpPct}
+            enemyLabel={sceneEnemyLabel}
+            ninjaSrc={kanaSprites.ninjaSrc}
+            ghostSrc={kanaSprites.ghostSrc}
+            bubbleChar={duelBubbleChar}
+            slashFx={kanaFxSlash}
+            orbFx={kanaFxOrb}
+            screenTint={kanaScreenTint}
+          />
+        ) : null}
+
+        {arcadeTheme === 'kana' && q ? (
+          <KanaNinjaYureiArena
+            anim={kanaBattleAnim}
+            playerHpPct={playerHpPct}
+            enemyHpPct={enemyHpPct}
+            kanaChar={kanaBubbleChar}
+            strikeKind={kanaStrikeKind}
+            slashFx={kanaFxSlash}
+            orbFx={kanaFxOrb}
+            screenTint={kanaScreenTint}
+            floats={kanaFloats}
+            ninjaSrc={kanaSprites.ninjaSrc}
+            ghostSrc={kanaSprites.ghostSrc}
+            backdropSrc={kanaCombatBackdrop}
+          />
+        ) : null}
 
         {arcadeTheme === 'boss' && q ? (
           <section className="play-arcade__boss-panel" aria-label="Boss">
@@ -1522,7 +1961,6 @@ export default function KanaMatchGame() {
               </div>
               <span className="play-arcade__meter-val">{playerHpPct}%</span>
             </div>
-            <p className="play-arcade__boss-flavor">Trả lời đúng để tấn công Boss!</p>
           </section>
         ) : null}
 
@@ -1649,7 +2087,7 @@ export default function KanaMatchGame() {
   }
 
   return (
-    <div className={kanaGame && phase === 'playing' ? 'play-game play-game--kana-battle' : 'play-game'}>
+    <div className="play-game">
       <header className="play-game__head">
         <Link className="play-game__back" to={ROUTES.PLAY}>
           ← Trò chơi
@@ -1671,65 +2109,6 @@ export default function KanaMatchGame() {
       {error ? <div className="play-game__err">{error}</div> : null}
 
       {powerUpBar}
-
-      {kanaGame && phase === 'playing' ? (
-        <section
-          className={`play-kana-battle play-kana-battle--${kanaBattlefield}`}
-          aria-label="Chiến trường luyện tập"
-          data-anim={kanaBattleAnim}
-        >
-          <div className="play-kana-battle__strip" aria-hidden>
-            <div className="play-kana-battle__hp play-kana-battle__hp--player">
-              <span className="play-kana-battle__hp-label">Ninja</span>
-              <span className="play-kana-battle__hp-track">
-                <span
-                  className="play-kana-battle__hp-fill play-kana-battle__hp-fill--player"
-                  style={{ width: `${playerHpPct}%` }}
-                />
-              </span>
-            </div>
-            <div className="play-kana-battle__hp play-kana-battle__hp--enemy">
-              <span className="play-kana-battle__hp-label">Yurei</span>
-              <span className="play-kana-battle__hp-track">
-                <span className="play-kana-battle__hp-fill play-kana-battle__hp-fill--enemy" />
-              </span>
-            </div>
-          </div>
-          <div className="play-kana-battle__stage">
-            <div className="play-kana-battle__actor play-kana-battle__ninja-wrap">
-              <div className="play-kana-battle__actor-label visually-hidden">Ninja chibi</div>
-              <div className="play-kana-battle__ninja">
-                <div className="play-kana-battle__ninja-band" />
-                <div className="play-kana-battle__ninja-face">
-                  <span className="play-kana-battle__ninja-eye" />
-                  <span className="play-kana-battle__ninja-eye" />
-                </div>
-                <div className="play-kana-battle__ninja-body" />
-                <div className="play-kana-battle__ninja-sword" />
-              </div>
-            </div>
-            <div className="play-kana-battle__actor play-kana-battle__yurei-wrap">
-              <div className="play-kana-battle__actor-label visually-hidden">Yurei</div>
-              <div className="play-kana-battle__yurei">
-                <div className="play-kana-battle__yurei-sheet">
-                  <div className="play-kana-battle__yurei-face">
-                    <span className="play-kana-battle__yurei-eye" />
-                    <span className="play-kana-battle__yurei-eye" />
-                    <span className="play-kana-battle__yurei-blush" />
-                    <span className="play-kana-battle__yurei-blush" />
-                  </div>
-                  <div className="play-kana-battle__yurei-arm play-kana-battle__yurei-arm--l" />
-                  <div className="play-kana-battle__yurei-arm play-kana-battle__yurei-arm--r">
-                    <span className="play-kana-battle__yurei-tablet" aria-hidden />
-                  </div>
-                </div>
-                <div className="play-kana-battle__yurei-tail" />
-              </div>
-            </div>
-          </div>
-          <p className="play-kana-battle__hint">Trả lời đúng để Ninja tấn công; sai hoặc hết giờ thì Yurei phản đòn.</p>
-        </section>
-      ) : null}
 
       {q ? (
         <>
