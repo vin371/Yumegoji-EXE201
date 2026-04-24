@@ -1,0 +1,4 @@
+# Bắt buộc Docker build — tránh lỗi "Error creating build plan with Railpack"
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"

@@ -179,6 +179,10 @@ namespace backend
 
                             if (Uri.TryCreate(origin, UriKind.Absolute, out var uri))
                             {
+                                if (uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) &&
+                                    uri.Host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase))
+                                    return true;
+
                                 if (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
                                     uri.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
                                     uri.Host.Equals("::1", StringComparison.OrdinalIgnoreCase))
