@@ -1,0 +1,4 @@
+---
+# Loại Dockerfile khỏi toàn bộ phân tích Codacy (Pylint/revive nhầm file → lỗi giả ở dòng # / FROM)
+exclude_paths:
+  - "Dockerfile"

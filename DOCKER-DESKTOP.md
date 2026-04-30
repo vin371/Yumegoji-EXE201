@@ -76,11 +76,14 @@ Khi mở **Run a new container** từ image SQL Server:
 | Login | `sa` |
 | Password | Trùng với `MSSQL_SA_PASSWORD` trong Compose / form Run (mặc định compose trong repo: `Yumegoji_Sql_2024!`) |
 
-Sau đó chạy script:
+Sau đó chạy **theo thứ tự** (tạo DB **YumegojiDB**, bảng, rồi dữ liệu mẫu):
 
-`backend\doc\sql\YumegojiDB-AllScripts.sql`
+1. `backend\doc\sql\01_yumegoji_database_DDL.sql`
+2. `backend\doc\sql\02_yumegoji_database_seed.sql`
 
-để tạo database **`YumegojiDB`** và bảng.
+**SSMS:** Query → **SQLCMD Mode** (vì file dùng lệnh `:r` để gọi script con), mở từng file và **Execute**. Hoặc dùng **`sqlcmd`** từ PowerShell — xem [README.md](README.md) mục “Khởi tạo schema + dữ liệu mẫu”.
+
+File `YumegojiDB-AllScripts.sql` chỉ còn **tham khảo / snapshot cũ**; luồng mới dùng `01` + `02`.
 
 ---
 

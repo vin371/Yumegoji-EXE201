@@ -349,6 +349,11 @@ function ApiLessonView({ data }) {
       ? tryBuildParagraphDeckFromHtml(content)
       : null;
   const useParagraphDeck = Boolean(paragraphDeckResult && paragraphDeckResult.cardCount >= 3);
+  /**
+   * Bài API (import/moderator): luôn hiển thị **toàn bộ** `content` HTML — không dùng suppressMainHtml
+   * (heuristic buildApiLessonContentParts dễ «cắt» mất mục như «Số», đoạn tiếng Việt…).
+   * Chỉ Hiragana deck / paragraph deck giữ cách hiển thị thay thế phần thân.
+   */
   const contentParts = useHiraganaDeck
     ? {
         showSegments: true,
@@ -363,13 +368,26 @@ function ApiLessonView({ data }) {
           suppressMainHtml: true,
           introSource: '',
         }
-      : buildApiLessonContentParts(content);
+      : (() => {
+          const p = buildApiLessonContentParts(content);
+          return { ...p, suppressMainHtml: false };
+        })();
   const mainLessonHtml =
-    contentParts.showSegments || contentParts.suppressMainHtml
-      ? contentParts.introSource.trim()
-        ? getLessonBodyHtml(contentParts.introSource)
-        : ''
+    useHiraganaDeck || useParagraphDeck
+      ? contentParts.showSegments || contentParts.suppressMainHtml
+        ? contentParts.introSource.trim()
+          ? getLessonBodyHtml(contentParts.introSource)
+          : ''
+        : getLessonBodyHtml(content)
       : getLessonBodyHtml(content);
+  /**
+   * Lưới «Ôn từng mục» từ heuristic HTML — chỉ khi **chưa** có từ vựng API (tránh trùng với HTML đầy đủ).
+   * Bài Hiragana: luôn hiện bảng deck (useHiraganaDeck), bỏ qua điều kiện vocab.
+   */
+  const showHtmlSegmentDeck =
+    !useParagraphDeck &&
+    contentParts.showSegments &&
+    (useHiraganaDeck || vocab.length === 0);
   const grammar = data.grammar ?? data.Grammar ?? [];
   const quiz = data.quiz ?? data.Quiz ?? [];
   const [saving, setSaving] = useState(false);
@@ -555,7 +573,7 @@ function ApiLessonView({ data }) {
             </div>
           </section>
         ) : null}
-        {!useParagraphDeck && contentParts.showSegments ? (
+        {showHtmlSegmentDeck ? (
           <section className="learn-block learn-block--api-extra learn-block--api-segments">
             <h3 className="learn-block__h3">
               {useHiraganaDeck ? 'Bảng chữ Hiragana' : 'Ôn từng mục'}

@@ -158,3 +158,15 @@ E:\EXE201\EXE201\backend\obj\Release\net8.0\refint\backend.dll
 E:\EXE201\EXE201\backend\obj\Release\net8.0\backend.pdb
 E:\EXE201\EXE201\backend\obj\Release\net8.0\backend.genruntimeconfig.cache
 E:\EXE201\EXE201\backend\obj\Release\net8.0\ref\backend.dll
+E:\EXE201\EXE201\backend\bin\Release\net8.0\appsettings.Docker.json
+E:\EXE201\EXE201\backend\bin\Release\net8.0\BouncyCastle.Cryptography.dll
+E:\EXE201\EXE201\backend\bin\Release\net8.0\Google.Apis.dll
+E:\EXE201\EXE201\backend\bin\Release\net8.0\Google.Apis.Auth.dll
+E:\EXE201\EXE201\backend\bin\Release\net8.0\Google.Apis.Core.dll
+E:\EXE201\EXE201\backend\bin\Release\net8.0\MailKit.dll
+E:\EXE201\EXE201\backend\bin\Release\net8.0\MimeKit.dll
+E:\EXE201\EXE201\backend\bin\Release\net8.0\Newtonsoft.Json.dll
+E:\EXE201\EXE201\backend\bin\Release\net8.0\System.Management.dll
+E:\EXE201\EXE201\backend\bin\Release\net8.0\System.Security.Cryptography.Pkcs.dll
+E:\EXE201\EXE201\backend\bin\Release\net8.0\runtimes\win\lib\net7.0\System.Management.dll
+E:\EXE201\EXE201\backend\bin\Release\net8.0\runtimes\win\lib\net8.0\System.Security.Cryptography.Pkcs.dll

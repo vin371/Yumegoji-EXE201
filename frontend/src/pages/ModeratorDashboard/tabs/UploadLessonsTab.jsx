@@ -23,6 +23,16 @@ function isSupportedDocFile(f) {
   return n.endsWith('.pdf') || n.endsWith('.docx') || n.endsWith('.pptx');
 }
 
+function isPdfFile(f) {
+  return Boolean(f?.name?.toLowerCase().endsWith('.pdf'));
+}
+
+function isOfficeNativePreviewFile(f) {
+  if (!f?.name) return false;
+  const n = f.name.toLowerCase();
+  return n.endsWith('.docx') || n.endsWith('.pptx');
+}
+
 function isImageFile(f) {
   return Boolean(f?.type?.startsWith('image/'));
 }
@@ -207,7 +217,10 @@ function mapDraftToCreatePayload(draft, categoryId, overrides) {
 
 export function UploadLessonsTab() {
   const inputRef = useRef(null);
+  const previewColumnRef = useRef(null);
   const [imgPreviewUrl, setImgPreviewUrl] = useState('');
+  /** Blob URL — trình duyệt xem PDF ngay sau khi chọn file (không cần chờ server). */
+  const [pdfObjectUrl, setPdfObjectUrl] = useState('');
   const [file, setFile] = useState(null);
   const [pastedContent, setPastedContent] = useState('');
   const [loading, setLoading] = useState(false);
@@ -415,6 +428,25 @@ export function UploadLessonsTab() {
   }, [file]);
 
   useEffect(() => {
+    if (!file || !isPdfFile(file)) {
+      setPdfObjectUrl('');
+      return undefined;
+    }
+    const u = URL.createObjectURL(file);
+    setPdfObjectUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [file]);
+
+  /** Sau khi chọn file — cuộn tới cột xem trước để moderator thấy PDF / thẻ PPTX ngay. */
+  useEffect(() => {
+    if (!file) return;
+    const t = window.setTimeout(() => {
+      previewColumnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 120);
+    return () => window.clearTimeout(t);
+  }, [file]);
+
+  useEffect(() => {
     if (!libToast) return undefined;
     const t = setTimeout(() => setLibToast(''), 3200);
     return () => clearTimeout(t);
@@ -451,6 +483,11 @@ export function UploadLessonsTab() {
       return;
     }
     setError('');
+    setSuccess('');
+    setSavedLearnSlug('');
+    setDraft(null);
+    setExtractedPreview('');
+    setAiWarning('');
     setFile(f);
   }, []);
 
@@ -579,7 +616,7 @@ export function UploadLessonsTab() {
     setSavedLearnSlug('');
     setAiWarning('');
     setDraft(null);
-    setExtractedPreview('');
+    /* Giữ extractedPreview cũ (nếu có) trong lúc chờ — tránh cột trái trống hàng phút khi gọi AI. */
 
     const text = pastedContent.trim();
     const docFile = file && isSupportedDocFile(file) ? file : null;
@@ -679,7 +716,7 @@ export function UploadLessonsTab() {
       return;
     }
     if (!draft) {
-      setError('Chưa có dữ liệu — dùng «Bắt đầu quét», hoặc tuỳ chọn nâng cao bên dưới.');
+      setError('Chưa có dữ liệu — dùng «Quét AI», hoặc tuỳ chọn nâng cao bên dưới.');
       return;
     }
 
@@ -743,19 +780,16 @@ export function UploadLessonsTab() {
         <div className="mod-import__header-text">
           <h2>Import bài học</h2>
           <p>
-            Thanh công cụ phía trên (tải tài liệu, JLPT, quét AI); hai cột dưới chia đôi: <strong>Xem trước tài liệu</strong> và{' '}
-            <strong>Kết quả AI</strong>. Chọn tab Từ vựng / Ngữ pháp / Bài đọc để đồng bộ nội dung hiển thị bên trái theo dữ liệu
-            đã trích.
+            Chọn file → <strong>xem trước ngay</strong> (PDF trong trình duyệt; PPTX/DOCX có thẻ hướng dẫn) → chỉnh JLPT / danh mục →
+            bấm <strong>Quét AI</strong>. Hai cột: <strong>Xem trước tài liệu</strong> và <strong>Kết quả AI</strong> (tab Từ vựng / Ngữ pháp / Bài đọc).
           </p>
         </div>
       </FM.motion.header>
 
       <p className="mod-import__notice">
-        <strong>Lưu ý:</strong> file chỉ dùng để <strong>trích chữ</strong> trên server — không lưu file gốc. «Lưu bài học»
-        ghi HTML, từ vựng, ngữ pháp, quiz. Trang này <strong>không</strong> liệt kê bài — xem như học viên: menu{' '}
-        <strong>Học tập</strong> → <strong>Bài từ hệ thống</strong> (thường cần tick <strong>Xuất bản ngay</strong>). Server
-        dùng <strong>OpenAI</strong> hoặc <strong>Ollama</strong> (sinh có thể vài phút; tối đa ~48k ký tự văn bản).{' '}
-        <strong>Ảnh</strong> không trích chữ — hãy dán nội dung OCR hoặc dùng PDF.
+        <strong>Lưu ý:</strong> khi <strong>Quét AI</strong>, file được gửi lên server để <strong>trích chữ</strong> — không lưu file gốc lâu dài.
+        «Lưu bài học» ghi HTML, từ vựng, ngữ pháp, quiz. Server dùng <strong>OpenAI</strong> hoặc <strong>Ollama</strong> (có thể vài phút;
+        tối đa ~48k ký tự). <strong>Ảnh</strong> không trích chữ — dán OCR hoặc dùng PDF.
       </p>
 
       {error ? <div className="mod-dash__alert mod-dash__alert--err">{error}</div> : null}
@@ -845,7 +879,22 @@ export function UploadLessonsTab() {
                     'Chưa chọn tệp'
                   )}
                 </span>
+                {file && (isSupportedDocFile(file) || pastedContent.trim()) ? (
+                  <button
+                    type="button"
+                    className="mod-dash__btn mod-dash__btn--primary mod-dash__btn--sm mod-import-studio__file-cta-ai"
+                    disabled={busy}
+                    onClick={runAi}
+                  >
+                    {loading ? 'Đang gọi AI…' : 'Quét AI'}
+                  </button>
+                ) : null}
               </div>
+              {file && isSupportedDocFile(file) ? (
+                <p className="mod-import-studio__file-received" role="status">
+                  Đã nhận tệp — xem khung <strong>Xem trước tài liệu</strong> bên dưới (PDF hiện ngay; PPTX/DOCX hiện thẻ + hướng dẫn).
+                </p>
+              ) : null}
               <p className="mod-import-studio__hint-row">
                 Slide chỉ ảnh: dán chữ vào ô bên dưới. Với ảnh, bắt buộc dán nội dung để AI xử lý.
               </p>
@@ -935,7 +984,7 @@ export function UploadLessonsTab() {
               </details>
 
               <button type="button" className="mod-import-studio__scan-cta" disabled={busy} onClick={runAi}>
-                {loading ? 'Đang trích & gọi AI…' : 'Bắt đầu quét'}
+                {loading ? 'Đang trích & gọi AI…' : 'Quét AI'}
               </button>
             </div>
           </div>
@@ -948,6 +997,7 @@ export function UploadLessonsTab() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.1 }}
           >
+            <div ref={previewColumnRef} className="mod-import-studio__preview-anchor">
             <div className="mod-import-studio__glass">
               <div className="mod-import-studio__preview-head">
                 <h3>Xem trước tài liệu</h3>
@@ -955,7 +1005,43 @@ export function UploadLessonsTab() {
                   {busy ? 'Đang quét…' : systemBadgeText}
                 </span>
               </div>
-              <div className="mod-import-studio__doc-frame mod-recon__frame">
+              <div
+                className={`mod-import-studio__doc-frame mod-recon__frame${pdfObjectUrl ? ' mod-import-studio__doc-frame--with-pdf' : ''}`}
+              >
+                {pdfObjectUrl ? (
+                  <div className="mod-import-studio__pdf-shell">
+                    <div className="mod-import-studio__native-preview-head">Xem trước PDF (trên máy bạn)</div>
+                    <div className={`mod-import-studio__pdf-viewport${busy ? ' mod-import-studio__pdf-viewport--busy' : ''}`}>
+                      {loading ? (
+                        <FM.motion.div
+                          className="mod-import-studio__scanner mod-import-studio__scanner--pdf"
+                          initial={{ top: '8%' }}
+                          animate={{ top: ['6%', '92%', '6%'] }}
+                          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                      ) : null}
+                      <iframe
+                        title="Xem trước PDF"
+                        src={`${pdfObjectUrl}#navpanes=0&toolbar=1`}
+                        className="mod-import-studio__pdf-iframe"
+                      />
+                    </div>
+                  </div>
+                ) : null}
+                {file && isOfficeNativePreviewFile(file) && !pdfObjectUrl && !displaySourceText.trim() ? (
+                  <div className="mod-import-studio__office-native-card">
+                    <div className="mod-import-studio__office-native-icon" aria-hidden>
+                      {file.name.toLowerCase().endsWith('.pptx') ? '📊' : '📝'}
+                    </div>
+                    <div>
+                      <strong>{file.name}</strong>
+                      <p className="mod-import-studio__office-native-text">
+                        Trình duyệt không mở PPTX/DOCX như Google Drive. Bạn sẽ thấy <strong>nội dung đã trích</strong> dạng
+                        slide/câu bên dưới sau khi bấm <strong>Quét AI</strong> (hoặc «Chỉ trích văn bản» trong tuỳ chọn nâng cao).
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
                 {imgPreviewUrl ? (
                   <div className={`mod-recon__slide-canvas${busy ? ' mod-recon__slide-canvas--scanning' : ''}`}>
                     {scannerAnimating ? (
@@ -1131,22 +1217,22 @@ export function UploadLessonsTab() {
                       </div>
                     </div>
                   </div>
-                ) : (
+                ) : pdfObjectUrl || (file && isOfficeNativePreviewFile(file) && !displaySourceText.trim()) ? null : (
                   <div className="mod-import-studio__doc-empty">
                     <span style={{ fontSize: '2rem' }} aria-hidden>
                       🙈
                     </span>
                     <p>
-                      Chưa có văn bản để hiển thị. Tải PDF/DOCX/PPTX, dán nội dung, rồi bấm <strong>Bắt đầu quét</strong>.
+                      Chưa có văn bản để hiển thị. Tải PDF/DOCX/PPTX hoặc dán nội dung, rồi bấm <strong>Quét AI</strong>.
                     </p>
                   </div>
                 )}
               </div>
               <p className="mod-import__tip" style={{ marginTop: '0.65rem' }}>
-                <strong>Mẹo:</strong> trước khi quét AI, cột này luôn hiển thị <strong>toàn bộ</strong> văn bản đã trích từ file.
-                Sau khi có bản nháp AI, bấm dòng để tô sáng và mở đúng tab ở cột Kết quả AI (ảnh slide gốc PPTX không có trên
-                server).
+                <strong>Mẹo:</strong> PDF xem thử ngay trên trình duyệt; PPTX/DOCX cần <strong>Quét AI</strong> để thấy nội dung dạng
+                slide/câu. Sau khi có bản nháp, bấm dòng để đồng bộ tab Kết quả AI.
               </p>
+            </div>
             </div>
           </FM.motion.div>
 
@@ -1206,8 +1292,8 @@ export function UploadLessonsTab() {
                   <div className="mod-import-studio__doc-empty mod-ai-empty-wait" style={{ minHeight: '200px' }}>
                     <p className="mod-ai-empty-wait__title">Chưa tạo bằng AI</p>
                     <p>
-                      Cột <strong>Xem trước tài liệu</strong> đang hiển thị đầy đủ nội dung đã trích từ file. Bấm{' '}
-                      <strong>Bắt đầu quét</strong> phía trên để AI sinh từ vựng, ngữ pháp và bài đọc tại đây.
+                      Cột <strong>Xem trước tài liệu</strong> hiển thị PDF (nếu có) hoặc nội dung đã trích. Bấm <strong>Quét AI</strong>{' '}
+                      phía trên để AI sinh từ vựng, ngữ pháp và bài đọc tại đây.
                     </p>
                   </div>
                 ) : insightTab === 'vocab' ? (

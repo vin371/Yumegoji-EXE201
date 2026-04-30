@@ -1,4 +1,10 @@
 -- ============================================================================
+-- [DEPRECATED / CHI THAM KHAO] File snapshot gop nhieu script (khong cap nhat theo 01/02).
+--
+-- Luong khuyen dung cho database moi:
+--   1) Chay: 01_yumegoji_database_DDL.sql  (sqlcmd hoac SSMS SQLCMD Mode, cwd = thu muc sql)
+--   2) Chay: 02_yumegoji_database_seed.sql
+--
 -- [VI] File SQL gop tat ca script trong backend/doc/sql cho database YumegojiDB.
 --     Tao DB neu chua co, roi chay lan luot. Khuyen dung SSMS, ket noi master.
 -- [EN] Consolidated script; creates YumegojiDB if missing. SQL Server 2016+ (JSON).
