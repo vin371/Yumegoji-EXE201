@@ -4,7 +4,6 @@
   "installCommand": "npm install",
   "outputDirectory": "dist",
   "rewrites": [
-    { "handle": "filesystem" },
     {
       "source": "/((?!api/|hubs/|uploads/).*)",
       "destination": "/index.html"
