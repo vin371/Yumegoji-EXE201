@@ -203,7 +203,7 @@ export default function Homepage() {
         <div className="sn-container sn-hero__grid">
           <div className="sn-hero__content sn-reveal is-visible">
             <span className="sn-hero__badge">{hero.badge}</span>
-            <h1 className="sn-hero__title">
+            <h1 className="sn-hero__title" lang="vi">
               {hero.title} <span className="sn-hero__accent">{hero.highlight}</span>
             </h1>
             <p className="sn-hero__desc">{hero.description}</p>

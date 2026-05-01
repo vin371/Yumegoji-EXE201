@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import SpeakJaButton from '../../components/learn/SpeakJaButton';
+import ScrollReveal from '../../components/learn/ScrollReveal';
 import { ROUTES } from '../../data/routes';
 import { getN5LessonBySlug, N5_LESSONS } from '../../data/n5BeginnerCourse';
 import { useAuth } from '../../hooks/useAuth';
@@ -334,6 +335,7 @@ function ApiLessonView({ data }) {
   const { isAuthenticated } = useAuth();
   const { reloadSidebarProgress } = useOutletContext() || {};
   const htmlRef = useRef(null);
+  const lessonHtmlRef = useRef(null);
   const L = data.lesson ?? data.Lesson;
   const lessonId = L?.id ?? L?.Id;
   const title = L?.title ?? L?.Title ?? '';
@@ -360,6 +362,7 @@ function ApiLessonView({ data }) {
         segmentItems: getHiraganaDeckSegmentItems(),
         suppressMainHtml: true,
         introSource: '',
+        hideSegmentDeckDuplicate: false,
       }
     : useParagraphDeck
       ? {
@@ -367,10 +370,16 @@ function ApiLessonView({ data }) {
           segmentItems: [],
           suppressMainHtml: true,
           introSource: '',
+          hideSegmentDeckDuplicate: false,
         }
       : (() => {
           const p = buildApiLessonContentParts(content);
-          return { ...p, suppressMainHtml: false };
+          /* Luôn render toàn bộ HTML; heuristic tách «ôn từng mục» trùng nội dung → ẩn lưới thẻ, chỉ cuộn đọc. */
+          return {
+            ...p,
+            suppressMainHtml: false,
+            hideSegmentDeckDuplicate: Boolean(p.showSegments && p.suppressMainHtml),
+          };
         })();
   const mainLessonHtml =
     useHiraganaDeck || useParagraphDeck
@@ -381,13 +390,14 @@ function ApiLessonView({ data }) {
         : getLessonBodyHtml(content)
       : getLessonBodyHtml(content);
   /**
-   * Lưới «Ôn từng mục» từ heuristic HTML — chỉ khi **chưa** có từ vựng API (tránh trùng với HTML đầy đủ).
-   * Bài Hiragana: luôn hiện bảng deck (useHiraganaDeck), bỏ qua điều kiện vocab.
+   * Lưới «Ôn từng mục» — Hiragana hoặc bài tách intro/thẻ (suppressMainHtml).
+   * Không hiện khi đã render full HTML cùng nội dung (hideSegmentDeckDuplicate) để tránh hai lớp UI.
    */
   const showHtmlSegmentDeck =
     !useParagraphDeck &&
     contentParts.showSegments &&
-    (useHiraganaDeck || vocab.length === 0);
+    (useHiraganaDeck || vocab.length === 0) &&
+    !contentParts.hideSegmentDeckDuplicate;
   const grammar = data.grammar ?? data.Grammar ?? [];
   const quiz = data.quiz ?? data.Quiz ?? [];
   const [saving, setSaving] = useState(false);
@@ -414,6 +424,48 @@ function ApiLessonView({ data }) {
     };
   }, [isAuthenticated, lessonId]);
 
+  /** Fade-in + slide-up cho từng khối HTML chính (nội dung inject). */
+  useEffect(() => {
+    const root = lessonHtmlRef.current;
+    if (!root || !mainLessonHtml) return undefined;
+
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const sel =
+      ':scope > p, :scope > div, :scope > section, :scope > ul, :scope > ol, :scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > article, :scope > blockquote, :scope > pre, :scope > table';
+    const targets = Array.from(root.querySelectorAll(sel));
+    if (targets.length === 0) return undefined;
+
+    if (reduce) {
+      targets.forEach((el) => {
+        el.classList.add('learn-scroll-reveal', 'learn-scroll-reveal--visible');
+      });
+      return undefined;
+    }
+
+    targets.forEach((el) => {
+      el.classList.add('learn-scroll-reveal');
+    });
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('learn-scroll-reveal--visible');
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { root: null, rootMargin: '0px 0px -7% 0px', threshold: 0.05 },
+    );
+    targets.forEach((el) => io.observe(el));
+    return () => {
+      io.disconnect();
+      targets.forEach((el) => {
+        el.classList.remove('learn-scroll-reveal', 'learn-scroll-reveal--visible');
+      });
+    };
+  }, [mainLessonHtml]);
+
   if (!L) {
     return <Navigate to={ROUTES.LEARN} replace />;
   }
@@ -435,8 +487,13 @@ function ApiLessonView({ data }) {
     }
   };
 
+  const scrollReadingLayout =
+    Boolean(mainLessonHtml) && !useParagraphDeck && !showHtmlSegmentDeck;
+
   return (
-    <article className="learn-lesson learn-lesson--from-api">
+    <article
+      className={`learn-lesson learn-lesson--from-api${scrollReadingLayout ? ' learn-lesson--scroll-reading' : ''}`}
+    >
       <header className="learn-lesson__header learn-lesson__header--lesson">
         <span className="learn-lesson__badge">{categoryName}</span>
         <h2 className="learn-lesson__title">{title}</h2>
@@ -444,8 +501,9 @@ function ApiLessonView({ data }) {
       {japaneseSpeechSupported() ? (
         <div className="learn-lesson__audio-bar">
           <p className="learn-lesson__audio-bar__text">
-            Nút loa trên từng thẻ: nghe từ đó. “Nghe nội dung” đọc cả phần bài + danh sách ôn (giọng máy,
-            tùy trình duyệt).
+            {scrollReadingLayout
+              ? '«Nghe nội dung» đọc văn bản trong bài (tiếng Nhật — giọng máy, tùy trình duyệt).'
+              : 'Nút loa trên từng thẻ: nghe từ đó. «Nghe nội dung» đọc cả phần bài + danh sách ôn (giọng máy, tùy trình duyệt).'}
           </p>
           <div className="learn-lesson__audio-bar__actions">
             <button
@@ -480,7 +538,7 @@ function ApiLessonView({ data }) {
                 const meaning = String(v.meaningVi ?? v.MeaningVi ?? '').trim();
                 const speakText = (reading || w).trim();
                 return (
-                  <div
+                  <ScrollReveal
                     key={v.id ?? v.Id ?? w}
                     className="learn-vocab-card learn-vocab-card--paragraph-deck"
                     role="listitem"
@@ -509,7 +567,7 @@ function ApiLessonView({ data }) {
                         />
                       ) : null}
                     </div>
-                  </div>
+                  </ScrollReveal>
                 );
               })}
             </div>
@@ -517,6 +575,7 @@ function ApiLessonView({ data }) {
         ) : null}
         {mainLessonHtml ? (
           <div
+            ref={lessonHtmlRef}
             className="learn-lesson__body learn-lesson__html"
             dangerouslySetInnerHTML={{ __html: mainLessonHtml }}
           />
@@ -534,9 +593,9 @@ function ApiLessonView({ data }) {
               {paragraphDeckResult.items.map((it, i) => {
                 if (it.type === 'note') {
                   return (
-                    <div key={`pnote-${i}`} className="learn-paragraph-note" role="listitem">
+                    <ScrollReveal key={`pnote-${i}`} className="learn-paragraph-note" role="listitem">
                       {it.text}
-                    </div>
+                    </ScrollReveal>
                   );
                 }
                 const jp = it.jp ?? '';
@@ -544,7 +603,7 @@ function ApiLessonView({ data }) {
                 const vi = (it.vi ?? '').trim();
                 const speakText = (reading || jp).trim();
                 return (
-                  <div
+                  <ScrollReveal
                     key={`pcard-${i}-${jp.slice(0, 12)}`}
                     className="learn-vocab-card learn-vocab-card--paragraph-deck"
                     role="listitem"
@@ -567,7 +626,7 @@ function ApiLessonView({ data }) {
                         <SpeakJaButton text={speakText} label={`Nghe: ${speakText}`} className="learn-speak-btn--paragraph" />
                       ) : null}
                     </div>
-                  </div>
+                  </ScrollReveal>
                 );
               })}
             </div>
@@ -590,14 +649,14 @@ function ApiLessonView({ data }) {
               {contentParts.segmentItems.map((it, i) => {
                 if (it.section) {
                   return (
-                    <h4 key={`sec-${i}`} className="learn-hiragana-section-title">
+                    <ScrollReveal as="h4" key={`sec-${i}`} className="learn-hiragana-section-title">
                       {it.section}
-                    </h4>
+                    </ScrollReveal>
                   );
                 }
                 const jp = it.jp ?? '';
                 return (
-                  <div
+                  <ScrollReveal
                     key={`${jp}-${i}`}
                     className={`learn-vocab-card learn-vocab-card--segment${useHiraganaDeck ? ' learn-vocab-card--hiragana' : ''}`}
                     role="listitem"
@@ -616,7 +675,7 @@ function ApiLessonView({ data }) {
                     {it.gloss ? (
                       <p className="learn-vocab-card__mean learn-vocab-card__gloss">{it.gloss}</p>
                     ) : null}
-                  </div>
+                  </ScrollReveal>
                 );
               })}
             </div>
@@ -630,7 +689,7 @@ function ApiLessonView({ data }) {
             {grammar.map((g) => {
               const pat = g.pattern ?? g.Pattern ?? '';
               return (
-                <li key={g.id ?? g.Id ?? pat}>
+                <ScrollReveal as="li" key={g.id ?? g.Id ?? pat}>
                   <span className="learn-api-grammar__row">
                     <strong lang="ja">{pat}</strong>
                     {pat ? <SpeakJaButton text={pat} label={`Nghe: ${pat}`} /> : null}
@@ -638,7 +697,7 @@ function ApiLessonView({ data }) {
                       <span className="learn-api-grammar__mean"> — {g.meaningVi ?? g.MeaningVi}</span>
                     ) : null}
                   </span>
-                </li>
+                </ScrollReveal>
               );
             })}
           </ul>
@@ -653,7 +712,7 @@ function ApiLessonView({ data }) {
               const ci = Number(q.correctIndex ?? q.CorrectIndex ?? 0);
               const qText = q.question ?? q.Question ?? '';
               return (
-                <li key={q.id ?? q.Id}>
+                <ScrollReveal as="li" key={q.id ?? q.Id}>
                   <div className="learn-api-quiz__q-row">
                     <p className="learn-api-quiz__q">{qText}</p>
                     {JP_IN_STRING.test(qText) ? <SpeakJaButton text={qText} label="Nghe câu hỏi" /> : null}
@@ -675,7 +734,7 @@ function ApiLessonView({ data }) {
                       </li>
                     ))}
                   </ul>
-                </li>
+                </ScrollReveal>
               );
             })}
           </ol>

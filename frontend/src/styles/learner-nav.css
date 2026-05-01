@@ -42,7 +42,7 @@
 }
 
 html[data-theme='dark'] .learner-nav__brand-title {
-  color: #fca5a5;
+  color: #e9d5ff;
 }
 
 @media (max-width: 520px) {
@@ -80,8 +80,8 @@ html[data-theme='dark'] .learner-nav__brand-title {
 }
 
 html[data-theme='dark'] .learner-nav__link:hover {
-  color: #fecaca;
-  background: color-mix(in srgb, #f87171 14%, var(--bg));
+  color: #fef3c7;
+  background: color-mix(in srgb, var(--accent-warm, #fdba74) 18%, var(--bg));
 }
 
 .learner-nav__link--active {
@@ -91,9 +91,9 @@ html[data-theme='dark'] .learner-nav__link:hover {
 }
 
 html[data-theme='dark'] .learner-nav__link--active {
-  color: #fecaca;
-  border-color: rgba(248, 113, 113, 0.45);
-  background: color-mix(in srgb, #b91c1c 22%, var(--bg));
+  color: #fef9c3;
+  border-color: rgba(192, 132, 252, 0.45);
+  background: color-mix(in srgb, #c084fc 22%, var(--bg));
 }
 
 .learner-nav__ico {

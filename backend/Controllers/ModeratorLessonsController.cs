@@ -20,6 +20,19 @@ public class ModeratorLessonsController : ControllerBase
         _learning = learning;
     }
 
+    /// <summary>Danh sách bài học (đã / chưa publish) — lọc theo cấp, danh mục, từ khóa.</summary>
+    [HttpGet]
+    public async Task<ActionResult<PagedResultDto<StaffLessonListItemDto>>> ListLessons(
+        [FromQuery] int? levelId,
+        [FromQuery] int? categoryId,
+        [FromQuery] string? search,
+        [FromQuery] bool? isPublished,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50)
+    {
+        return Ok(await _learning.GetStaffLessonsPagedAsync(levelId, categoryId, search, isPublished, page, pageSize));
+    }
+
     /// <summary>Lấy toàn bộ nội dung bài (kể cả chưa publish) để soạn thảo.</summary>
     [HttpGet("{id:int}")]
     public async Task<ActionResult<LessonFullDetailDto>> GetForStaff(int id)
@@ -35,6 +48,26 @@ public class ModeratorLessonsController : ControllerBase
         try
         {
             var dto = await _learning.UpdateLessonByStaffAsync(id, body);
+            return dto == null ? NotFound() : Ok(dto);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Thay toàn bộ HTML + từ vựng + ngữ pháp + kanji + quiz (giống lúc tạo từ bản nháp import).
+    /// Giữ tiến độ/bookmark học viên; quiz và bảng phụ được ghi đè theo payload.
+    /// </summary>
+    [HttpPut("{lessonId:int}/content-from-draft")]
+    public async Task<ActionResult<LessonFullDetailDto>> UpdateContentFromDraft(
+        int lessonId,
+        [FromBody] StaffCreateLessonFromDraftRequest body)
+    {
+        try
+        {
+            var dto = await _learning.StaffUpdateLessonFromDraftAsync(lessonId, body);
             return dto == null ? NotFound() : Ok(dto);
         }
         catch (InvalidOperationException ex)

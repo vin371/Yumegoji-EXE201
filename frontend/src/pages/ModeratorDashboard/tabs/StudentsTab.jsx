@@ -139,11 +139,6 @@ export function StudentsTab() {
       <div className="mod-dash__panel-head mod-dash__panel-head--row">
         <div>
           <h2 className="mod-dash__panel-title">Quản lý học viên</h2>
-          <p className="mod-dash__panel-desc">
-            Dữ liệu từ <code className="mod-dash__code">GET /api/Moderation/staff/learners</code>; cập nhật cấp:{' '}
-            <code className="mod-dash__code">PATCH /api/Moderation/staff/learners/&#123;userId&#125;/level</code> với{' '}
-            <code className="mod-dash__code">&#123; &quot;levelId&quot;: 1|2|3|null &#125;</code> (khớp bảng <code className="mod-dash__code">levels</code>).
-          </p>
         </div>
         <button type="button" className="mod-dash__btn mod-dash__btn--ghost" onClick={load} disabled={loading}>
           ⟳ Làm mới

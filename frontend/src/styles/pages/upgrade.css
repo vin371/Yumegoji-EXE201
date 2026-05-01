@@ -383,12 +383,6 @@
   word-break: break-all;
 }
 
-.upgrade-pay__hint {
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-  opacity: 0.8;
-}
-
 .upgrade-pay__qr img {
   width: 100%;
   max-width: 280px;

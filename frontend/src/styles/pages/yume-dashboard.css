@@ -2796,6 +2796,33 @@ html[data-theme='dark'] .app--learner .app-main--learner {
   width: 100%;
 }
 
+.support-chat-panel__suggestions {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 94%, #f5f3ff 6%);
+}
+
+.support-chat-panel__suggestion-chip {
+  border: 1px solid color-mix(in srgb, #7c3aed 35%, var(--border));
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.support-chat-panel__suggestion-chip:hover {
+  border-color: #7c3aed;
+  background: color-mix(in srgb, #7c3aed 10%, var(--bg));
+}
+
 .support-chat-panel--member .support-chat-panel__messages {
   max-height: 200px;
   min-height: 120px;

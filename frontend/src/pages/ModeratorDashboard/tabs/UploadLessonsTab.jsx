@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as FM from 'framer-motion';
-import DOMPurify from 'dompurify';
 import { SakuraRain } from '../components/SakuraRain';
+import { sanitizeLessonBodyHtml } from '../../../utils/lessonContentHtml';
 import { ROUTES } from '../../../data/routes';
-import http from '../../../api/client';
+import http, { ENV } from '../../../api/client';
 import {
   createLessonFromDraft,
+  deleteStaffLesson,
   extractLessonPlainText,
+  fetchStaffLessonFull,
   generateLessonDraft,
+  updateLessonFromDraft,
+  uploadLessonDocumentFile,
 } from '../../../services/lessonImportService';
 
 const MAX_IMPORT_FILE_MB = 20;
@@ -124,6 +128,7 @@ function emptyDraft() {
     estimatedMinutes: 15,
     vocabulary: [],
     grammar: [],
+    kanji: [],
     quiz: [],
   };
 }
@@ -145,6 +150,45 @@ function plainTextToBasicHtml(text) {
   return paragraphs.map((p) => `<p>${esc(p)}</p>`).join('\n');
 }
 
+/** URL đầy đủ tới file trong wwwroot (frontend/API khác origin → cần VITE_API_URL). */
+function hrefForLessonUpload(relativePath) {
+  const p = String(relativePath || '').trim();
+  const path = p.startsWith('/') ? p : `/${p}`;
+  if (ENV.API_URL) return `${ENV.API_URL}${path}`;
+  if (typeof window !== 'undefined' && window.location?.origin) return `${window.location.origin}${path}`;
+  return path;
+}
+
+function escapeHtmlAttr(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeHtmlText(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/** Slug URL an toàn + hậu tố ngắn để tránh trùng slug mặc định «bai-hoc». */
+function slugSuggestionFromFileName(fileName) {
+  const withExt = String(fileName || 'tai-lieu').trim() || 'tai-lieu';
+  const noExt = withExt.replace(/\.[^.]+$/i, '').trim() || 'tai-lieu';
+  const ascii = noExt
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+  const base = ascii || 'tai-lieu';
+  return `${base}-${Date.now().toString(36)}`;
+}
+
 /** Bỏ thẻ HTML trong câu hỏi/đáp án quiz (AI đôi khi nhét &lt;strong&gt;). */
 function stripHtmlToPlain(s) {
   if (s == null) return '';
@@ -163,7 +207,7 @@ function normalizeAiDraft(d) {
     question: stripHtmlToPlain(q.question),
     options: (q.options || []).map((o) => stripHtmlToPlain(o)),
   }));
-  return { ...d, quiz };
+  return { ...d, quiz, kanji: Array.isArray(d.kanji) ? d.kanji : [] };
 }
 
 function mapDraftToCreatePayload(draft, categoryId, overrides) {
@@ -202,6 +246,18 @@ function mapDraftToCreatePayload(draft, categoryId, overrides) {
     })
     .filter((q) => q.options.length >= 2);
 
+  const kanji = (draft.kanji || [])
+    .filter((k) => k.character?.trim())
+    .map((k) => ({
+      character: k.character.trim(),
+      readingsOn: k.readingsOn?.trim() || null,
+      readingsKun: k.readingsKun?.trim() || null,
+      meaningVi: k.meaningVi?.trim() || null,
+      meaningEn: k.meaningEn?.trim() || null,
+      strokeCount: k.strokeCount != null && k.strokeCount !== '' ? Number(k.strokeCount) : null,
+      jlptLevel: k.jlptLevel?.trim() || null,
+    }));
+
   return {
     categoryId: Number(categoryId),
     title,
@@ -211,11 +267,77 @@ function mapDraftToCreatePayload(draft, categoryId, overrides) {
     isPublished: Boolean(overrides.isPublished),
     vocabulary: vocabulary.length ? vocabulary : null,
     grammar: grammar.length ? grammar : null,
+    kanji: kanji.length ? kanji : null,
     quiz: quiz.length ? quiz : null,
   };
 }
 
-export function UploadLessonsTab() {
+/** Đổ API staff (LessonFullDetailDto) vào state form import. */
+function lessonFullToDraft(full) {
+  const L = full?.lesson ?? full?.Lesson;
+  if (!L) return null;
+  const voc = full?.vocabulary ?? full?.Vocabulary ?? [];
+  const gram = full?.grammar ?? full?.Grammar ?? [];
+  const kj = full?.kanji ?? full?.Kanji ?? [];
+  const qz = full?.quiz ?? full?.Quiz ?? [];
+
+  const padQuizOptions = (opts) => {
+    const a = Array.isArray(opts) ? opts.map((o) => String(o ?? '')) : [];
+    while (a.length < 4) a.push('');
+    return a.slice(0, 8);
+  };
+
+  return {
+    lessonMeta: {
+      id: L.id ?? L.Id,
+      categoryId: L.categoryId ?? L.CategoryId,
+      levelId: L.levelId ?? L.LevelId,
+      isPublished: Boolean(L.isPublished ?? L.IsPublished),
+    },
+    draft: {
+      title: L.title ?? L.Title ?? '',
+      slugSuggestion: L.slug ?? L.Slug ?? '',
+      contentHtml: L.content ?? L.Content ?? '<p></p>',
+      estimatedMinutes: Number(L.estimatedMinutes ?? L.EstimatedMinutes) || 15,
+      vocabulary: voc.map((v) => ({
+        wordJp: v.wordJp ?? v.WordJp ?? '',
+        reading: v.reading ?? v.Reading ?? '',
+        meaningVi: v.meaningVi ?? v.MeaningVi ?? '',
+      })),
+      grammar: gram.map((g) => {
+        const ex = g.exampleSentences ?? g.ExampleSentences;
+        const examples =
+          typeof ex === 'string' && ex.trim()
+            ? ex
+                .split('\n')
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : [];
+        return {
+          pattern: g.pattern ?? g.Pattern ?? '',
+          meaningVi: g.meaningVi ?? g.MeaningVi ?? '',
+          examples,
+        };
+      }),
+      kanji: kj.map((k) => ({
+        character: k.character ?? k.Character ?? '',
+        readingsOn: k.readingsOn ?? k.ReadingsOn ?? '',
+        readingsKun: k.readingsKun ?? k.ReadingsKun ?? '',
+        meaningVi: k.meaningVi ?? k.MeaningVi ?? '',
+        meaningEn: k.meaningEn ?? k.MeaningEn ?? '',
+        strokeCount: k.strokeCount ?? k.StrokeCount ?? '',
+        jlptLevel: k.jlptLevel ?? k.JlptLevel ?? '',
+      })),
+      quiz: qz.map((q) => ({
+        question: q.question ?? q.Question ?? '',
+        options: padQuizOptions(q.options ?? q.Options),
+        correctIndex: Number(q.correctIndex ?? q.CorrectIndex) || 0,
+      })),
+    },
+  };
+}
+
+export function UploadLessonsTab({ initialStaffLessonId = null, onConsumedInitialStaffLesson } = {}) {
   const inputRef = useRef(null);
   const previewColumnRef = useRef(null);
   const [imgPreviewUrl, setImgPreviewUrl] = useState('');
@@ -224,7 +346,10 @@ export function UploadLessonsTab() {
   const [file, setFile] = useState(null);
   const [pastedContent, setPastedContent] = useState('');
   const [loading, setLoading] = useState(false);
+  /** Hai bước khi có file: extract → AI (upload văn bản thay vì file lần 2 — nhanh hơn khi mạng chậm). */
+  const [aiPhase, setAiPhase] = useState('idle');
   const [extracting, setExtracting] = useState(false);
+  const [attaching, setAttaching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -246,6 +371,14 @@ export function UploadLessonsTab() {
   const [highlightVocabIdx, setHighlightVocabIdx] = useState(null);
   const [highlightGrammarIdx, setHighlightGrammarIdx] = useState(null);
   const editorAnchorRef = useRef(null);
+  /** Đồng bộ ref để tự lưu sau import không bị stale closure. */
+  const categoryIdRef = useRef('');
+  const editingLessonIdRef = useRef(null);
+  const estimatedMinutesRef = useRef(15);
+  const isPublishedRef = useRef(false);
+  /** Đã có nội dung nhưng chưa có danh mục — tự lưu ngay khi chọn danh mục. */
+  const pendingAutoSaveRef = useRef(false);
+  const autoSaveInFlightRef = useRef(false);
 
   const [extractedPreview, setExtractedPreview] = useState('');
   const [aiWarning, setAiWarning] = useState('');
@@ -255,11 +388,28 @@ export function UploadLessonsTab() {
   const [contentHtml, setContentHtml] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState(15);
   const [isPublished, setIsPublished] = useState(false);
+  /** Sửa bài đã có trong DB (PUT content-from-draft); null = tạo mới. */
+  const [editingLessonId, setEditingLessonId] = useState(null);
+  const [loadingLesson, setLoadingLesson] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const htmlPreviewSanitized = useMemo(() => {
     if (!contentHtml?.trim()) return '';
-    return DOMPurify.sanitize(contentHtml, { USE_PROFILES: { html: true } });
+    return sanitizeLessonBodyHtml(contentHtml);
   }, [contentHtml]);
+
+  useEffect(() => {
+    categoryIdRef.current = categoryId;
+  }, [categoryId]);
+  useEffect(() => {
+    editingLessonIdRef.current = editingLessonId;
+  }, [editingLessonId]);
+  useEffect(() => {
+    estimatedMinutesRef.current = estimatedMinutes;
+  }, [estimatedMinutes]);
+  useEffect(() => {
+    isPublishedRef.current = isPublished;
+  }, [isPublished]);
 
   const derivedLessonKind = useMemo(() => {
     const n = (focusVocab ? 1 : 0) + (focusGrammar ? 1 : 0) + (focusReading ? 1 : 0);
@@ -286,6 +436,56 @@ export function UploadLessonsTab() {
   }, [extractedPreview, pastedContent]);
 
   const parsedSlides = useMemo(() => splitIntoSlides(displaySourceText), [displaySourceText]);
+
+  /** Tải bài khi chọn «Sửa trong Import» từ tab Nội dung bài học. */
+  useEffect(() => {
+    if (initialStaffLessonId == null || initialStaffLessonId < 1) return undefined;
+    let cancelled = false;
+    (async () => {
+      pendingAutoSaveRef.current = false;
+      setError('');
+      setSuccess('');
+      setSavedLearnSlug('');
+      setLoadingLesson(true);
+      try {
+        const full = await fetchStaffLessonFull(initialStaffLessonId);
+        const mapped = lessonFullToDraft(full);
+        if (cancelled) return;
+        if (!mapped) {
+          setError('API không trả dữ liệu bài học.');
+          return;
+        }
+        const { lessonMeta, draft: d } = mapped;
+        setEditingLessonId(lessonMeta.id);
+        setLevelId(String(lessonMeta.levelId));
+        setCategoryId(String(lessonMeta.categoryId));
+        setTitle(d.title);
+        setSlug(d.slugSuggestion);
+        setContentHtml(d.contentHtml || '<p></p>');
+        setEstimatedMinutes(d.estimatedMinutes);
+        setIsPublished(lessonMeta.isPublished);
+        setDraft({
+          ...d,
+          kanji: d.kanji?.length ? d.kanji : [],
+        });
+        setSuccess(`Đã tải bài #${lessonMeta.id} — chỉnh rồi bấm «Cập nhật bài học».`);
+      } catch (err) {
+        if (!cancelled) {
+          const msg = getApiErrorMessage(err, 'Không tải được bài');
+          setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+          setEditingLessonId(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingLesson(false);
+          onConsumedInitialStaffLesson?.();
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialStaffLessonId, onConsumedInitialStaffLesson]);
 
   useEffect(() => {
     setActiveSlideIndex(0);
@@ -563,7 +763,105 @@ export function UploadLessonsTab() {
     editorAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
+  /**
+   * Ghi draft xuống DB (tạo mới hoặc cập nhật). `isAuto`: thông báo ngắn gọn + không xoá success trước khi gọi (trừ khi lỗi).
+   */
+  const actuallyPersistLesson = useCallback(async (d, html, titleVal, slugVal, { isAuto = false } = {}) => {
+    const cat = categoryIdRef.current;
+    if (!cat) {
+      if (!isAuto) setError('Chọn cấp độ và danh mục bài học.');
+      return { ok: false, reason: 'no-category' };
+    }
+    if (!d) {
+      if (!isAuto) setError('Chưa có dữ liệu — dùng «Quét AI», hoặc tuỳ chọn nâng cao bên dưới.');
+      return { ok: false, reason: 'no-draft' };
+    }
+
+    setSaving(true);
+    if (!isAuto) {
+      setError('');
+      setSuccess('');
+      setSavedLearnSlug('');
+    }
+    try {
+      const draftForSave = { ...d, contentHtml: html };
+      const payload = mapDraftToCreatePayload(draftForSave, cat, {
+        title: titleVal,
+        slug: slugVal,
+        content: html,
+        estimatedMinutes: estimatedMinutesRef.current,
+        isPublished: isPublishedRef.current,
+      });
+      const editId = editingLessonIdRef.current;
+      if (editId != null) {
+        await updateLessonFromDraft(editId, payload);
+        setSuccess(
+          isAuto
+            ? 'Đã cập nhật bài trong database — sang tab «Nội dung bài học» (Làm mới) để xem.'
+            : 'Đã cập nhật bài học (HTML, từ vựng, ngữ pháp, kanji nếu có, quiz).',
+        );
+        setSavedLearnSlug(payload.slug);
+        setSavedWasPublished(Boolean(isPublishedRef.current));
+      } else {
+        await createLessonFromDraft(payload);
+        setSuccess(
+          isAuto
+            ? 'Đã lưu bài vào database — mở tab «Nội dung bài học» (bấm Làm mới nếu cần) để xem ngay.'
+            : 'Đã lưu bài học vào database.',
+        );
+        setSavedLearnSlug(payload.slug);
+        setSavedWasPublished(Boolean(isPublishedRef.current));
+        setDraft(null);
+        setFile(null);
+        setPastedContent('');
+        if (inputRef.current) inputRef.current.value = '';
+      }
+      return { ok: true };
+    } catch (err) {
+      let msg = getApiErrorMessage(err, 'Lỗi lưu');
+      if (typeof msg === 'string' && /slug đã tồn tại/i.test(msg)) {
+        msg = `${msg} Đổi ô Slug (URL) sang giá trị khác rồi Lưu lại — slug mặc định «bai-hoc» thường đã có sẵn một bài.`;
+      }
+      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      return { ok: false, reason: 'api' };
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
+  /** Khi đã chọn danh mục sau bước import — tự lưu một lần (tránh gọi song song). */
+  useEffect(() => {
+    if (!pendingAutoSaveRef.current) return;
+    if (!categoryId || !draft) return;
+    if (saving || loadingLesson || attaching || loading || extracting) return;
+    if (autoSaveInFlightRef.current) return;
+
+    autoSaveInFlightRef.current = true;
+    pendingAutoSaveRef.current = false;
+
+    void actuallyPersistLesson(draft, contentHtml, title, slug, { isAuto: true }).finally(() => {
+      autoSaveInFlightRef.current = false;
+    });
+  }, [
+    categoryId,
+    draft,
+    contentHtml,
+    title,
+    slug,
+    saving,
+    loadingLesson,
+    attaching,
+    loading,
+    extracting,
+    actuallyPersistLesson,
+  ]);
+
+  /**
+   * Trích văn bản từ file / ô dán → HTML đơn giản, **không gọi AI**.
+   * Dùng khi kết quả AI sai: soạn tay trong HTML, từ vựng/quiz tuỳ chọn, rồi «Lưu bài học».
+   */
   const runExtractNoAi = async () => {
+    pendingAutoSaveRef.current = false;
     setError('');
     setSuccess('');
     setSavedLearnSlug('');
@@ -571,22 +869,48 @@ export function UploadLessonsTab() {
     const text = pastedContent.trim();
     const docFile = file && isSupportedDocFile(file) ? file : null;
     if (!docFile && !text) {
-      setError('Chọn file PDF / DOCX / PPTX hoặc dán nội dung.');
+      if (file && isImageFile(file)) {
+        setError(
+          'Ảnh không trích chữ tự động. Hãy dán văn bản (OCR) vào ô bên dưới, hoặc dùng PDF/DOCX/PPTX.',
+        );
+      } else {
+        setError('Chọn file PDF / DOCX / PPTX hoặc dán nội dung.');
+      }
       return;
     }
 
     setExtracting(true);
     try {
       const res = await extractLessonPlainText({ file: docFile, text });
-      const html = plainTextToBasicHtml(res.plainText || '');
-      setDraft({ ...emptyDraft(), contentHtml: html });
-      setTitle('');
-      setSlug('');
+      const plain = String(res.plainText ?? res.PlainText ?? '').trim();
+      if (!plain) {
+        setError('Không có nội dung chữ sau khi trích. Thử file khác hoặc dán thêm văn bản.');
+        return;
+      }
+      const html = plainTextToBasicHtml(plain);
+      const d = { ...emptyDraft(), contentHtml: html };
+      const firstLine = plain.split(/\n/).find((l) => l.trim())?.trim() ?? '';
+      const titleGuess = firstLine.slice(0, 200) || 'Bài từ tài liệu';
+      const slugVal = docFile ? slugSuggestionFromFileName(docFile.name) : `noi-dung-${Date.now().toString(36)}`;
+
+      setDraft(d);
+      setTitle(titleGuess);
+      setSlug(slugVal);
       setContentHtml(html);
       setEstimatedMinutes(15);
-      setExtractedPreview(res.preview || '');
-      setAiWarning(res.warning || '');
-      setSuccess('Đã trích văn bản (không AI). Chỉnh tiêu đề, slug, HTML và quiz rồi Lưu.');
+      const leftPreview = plain.length > 12000 ? `${plain.slice(0, 12000)}\n…` : plain;
+      setExtractedPreview(leftPreview);
+      setAiWarning([res.warning, res.Warning].filter(Boolean).join(' ') || '');
+      if (!categoryIdRef.current) {
+        pendingAutoSaveRef.current = true;
+        setSuccess(
+          'Đã đưa nội dung đã trích vào bài (không AI). Chọn **Danh mục bài học** phía trên — hệ thống sẽ **tự lưu vào database** ngay, rồi xem trong tab «Nội dung bài học».',
+        );
+      } else {
+        pendingAutoSaveRef.current = false;
+        await actuallyPersistLesson(d, html, titleGuess, slugVal, { isAuto: true });
+      }
+      scrollToLessonEditor();
     } catch (err) {
       const msg = getApiErrorMessage(err, 'Lỗi trích văn bản');
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
@@ -595,7 +919,83 @@ export function UploadLessonsTab() {
     }
   };
 
+  /**
+   * Upload PDF/DOCX/PPTX lên server, chèn liên kết vào HTML — không gọi trích chữ.
+   * Nội dung ô dán (nếu có) được nối thêm dưới dạng đoạn văn bản thuần.
+   */
+  const runAttachFileNoExtract = async () => {
+    pendingAutoSaveRef.current = false;
+    setError('');
+    setSuccess('');
+    setSavedLearnSlug('');
+    setAiWarning('');
+    const docFile = file && isSupportedDocFile(file) ? file : null;
+    if (!docFile) {
+      setError('Chọn file PDF / DOCX / PPTX để đính kèm (không trích chữ).');
+      return;
+    }
+
+    setAttaching(true);
+    try {
+      const data = await uploadLessonDocumentFile(docFile);
+      const rel = data.url ?? data.Url ?? '';
+      if (!rel) {
+        setError('Server không trả URL file.');
+        return;
+      }
+      const orig = String(data.originalFileName ?? data.OriginalFileName ?? docFile.name ?? 'tai-lieu');
+      const href = hrefForLessonUpload(rel);
+      const isPdf = isPdfFile(docFile) || /\.pdf(\?|$)/i.test(String(rel));
+      let html;
+      if (isPdf) {
+        html = `<section class="lesson-attached-doc lesson-attached-doc--pdf-embed">
+<p><strong>PDF</strong> — xem trực tiếp trong trang (không trích chữ máy):</p>
+<div class="lesson-pdf-frame-wrap">
+<iframe class="lesson-pdf-iframe" title="${escapeHtmlAttr(orig)}" src="${escapeHtmlAttr(href)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+</div>
+<p class="lesson-pdf-fallback"><a href="${escapeHtmlAttr(href)}" target="_blank" rel="noopener noreferrer">Mở PDF tab mới / tải xuống — ${escapeHtmlText(orig)}</a></p>
+</section>`;
+      } else {
+        html = `<section class="lesson-attached-doc"><p><strong>Tài liệu đính kèm</strong> (không trích chữ từ file):</p><p><a href="${escapeHtmlAttr(href)}" target="_blank" rel="noopener noreferrer">${escapeHtmlText(orig)}</a></p></section>`;
+      }
+
+      const pasted = pastedContent.trim();
+      if (pasted) {
+        const extra = plainTextToBasicHtml(pasted);
+        html = `${html}\n${extra}`;
+      }
+
+      const d = { ...emptyDraft(), contentHtml: html };
+      const displayTitle = (orig.replace(/\.[^.]+$/i, '').trim() || orig).slice(0, 200);
+      const slugVal = slugSuggestionFromFileName(orig);
+      const titleFinal = displayTitle || 'Bài học có đính kèm';
+
+      setDraft(d);
+      setTitle(titleFinal);
+      setSlug(slugVal);
+      setContentHtml(html);
+      setEstimatedMinutes(15);
+      setExtractedPreview('');
+      if (!categoryIdRef.current) {
+        pendingAutoSaveRef.current = true;
+        setSuccess(
+          'File đã trên server, link đã vào bài. Chọn **Danh mục bài học** — hệ thống sẽ **tự lưu vào database** ngay, rồi mở tab «Nội dung bài học» (Làm mới) để xem.',
+        );
+      } else {
+        pendingAutoSaveRef.current = false;
+        await actuallyPersistLesson(d, html, titleFinal, slugVal, { isAuto: true });
+      }
+      scrollToLessonEditor();
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Lỗi upload tài liệu');
+      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    } finally {
+      setAttaching(false);
+    }
+  };
+
   const startManualNoAi = () => {
+    pendingAutoSaveRef.current = false;
     setError('');
     setSuccess('');
     setSavedLearnSlug('');
@@ -611,12 +1011,13 @@ export function UploadLessonsTab() {
   };
 
   const runAi = async () => {
+    pendingAutoSaveRef.current = false;
     setError('');
     setSuccess('');
     setSavedLearnSlug('');
     setAiWarning('');
     setDraft(null);
-    /* Giữ extractedPreview cũ (nếu có) trong lúc chờ — tránh cột trái trống hàng phút khi gọi AI. */
+    setAiPhase('idle');
 
     const text = pastedContent.trim();
     const docFile = file && isSupportedDocFile(file) ? file : null;
@@ -632,22 +1033,67 @@ export function UploadLessonsTab() {
     }
 
     setLoading(true);
+    let extractWarnings = '';
+    let textForAi = text;
+
     try {
-      const res = await generateLessonDraft({ file: docFile, text, lessonKind: derivedLessonKind });
-      setExtractedPreview(res.extractedPreview || '');
-      setAiWarning(res.warning || '');
+      if (docFile) {
+        setAiPhase('extract');
+        setSuccess('Bước 1/2: đang trích chữ trên server (không gọi AI)…');
+        const ex = await extractLessonPlainText({ file: docFile, text });
+        const plain = String(ex.plainText ?? ex.PlainText ?? '').trim();
+        if (!plain) {
+          setError('Không trích được chữ từ file. Thử PDF/DOCX, dán thêm nội dung, hoặc dùng «Chỉ trích văn bản».');
+          return;
+        }
+        textForAi = plain;
+        extractWarnings = [ex.warning, ex.Warning].filter(Boolean).join(' ');
+        const prevFull = plain.length > 12000 ? `${plain.slice(0, 12000)}\n…` : plain;
+        setExtractedPreview(prevFull);
+        setAiPhase('ai');
+        setSuccess(
+          'Bước 2/2: đang gọi AI (chỉ gửi văn bản — không upload lại file; nhanh hơn khi file PPTX lớn / mạng chậm). Có thể 30 giây–vài phút.',
+        );
+      }
+
+      const res = await generateLessonDraft({
+        file: null,
+        text: textForAi,
+        lessonKind: derivedLessonKind,
+      });
+      setExtractedPreview((prev) => {
+        const fromAi = res.extractedPreview || res.ExtractedPreview;
+        if (fromAi && String(fromAi).trim()) return String(fromAi);
+        return prev;
+      });
+      const wAi = res.warning || res.Warning || '';
+      setAiWarning([extractWarnings, wAi].filter(Boolean).join(' '));
       const d = normalizeAiDraft(res.draft);
+      const t = (d.title || '').trim() || 'Bài học';
+      let sl = String(d.slugSuggestion || '').trim();
+      if (!sl) sl = `bai-${Date.now().toString(36)}`;
+      const ch = d.contentHtml || '';
+
       setDraft(d);
-      setTitle(d.title || '');
-      setSlug(d.slugSuggestion || '');
-      setContentHtml(d.contentHtml || '');
+      setTitle(t);
+      setSlug(sl);
+      setContentHtml(ch);
       setEstimatedMinutes(d.estimatedMinutes || 15);
-      setSuccess('Đã sinh bản nháp — kiểm tra và chỉnh trước khi lưu.');
+      if (!categoryIdRef.current) {
+        pendingAutoSaveRef.current = true;
+        setSuccess(
+          'Đã sinh bản nháp từ AI. Chọn **Danh mục bài học** — hệ thống sẽ **tự lưu vào database** ngay, rồi xem trong tab «Nội dung bài học».',
+        );
+      } else {
+        pendingAutoSaveRef.current = false;
+        await actuallyPersistLesson(d, ch, t, sl, { isAuto: true });
+      }
     } catch (err) {
-      const msg = getApiErrorMessage(err, 'Lỗi gọi AI');
+      const msg = getApiErrorMessage(err, docFile ? 'Lỗi trích chữ hoặc gọi AI' : 'Lỗi gọi AI');
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
       setLoading(false);
+      setAiPhase('idle');
     }
   };
 
@@ -708,45 +1154,46 @@ export function UploadLessonsTab() {
   }, []);
 
   const saveLesson = async () => {
+    await actuallyPersistLesson(draft, contentHtml, title, slug, { isAuto: false });
+  };
+
+  const exitEditLessonContext = useCallback(() => {
+    pendingAutoSaveRef.current = false;
+    setEditingLessonId(null);
     setError('');
     setSuccess('');
     setSavedLearnSlug('');
-    if (!categoryId) {
-      setError('Chọn cấp độ và danh mục bài học.');
-      return;
-    }
-    if (!draft) {
-      setError('Chưa có dữ liệu — dùng «Quét AI», hoặc tuỳ chọn nâng cao bên dưới.');
-      return;
-    }
+  }, []);
 
-    setSaving(true);
+  const confirmDeleteLesson = async () => {
+    if (editingLessonId == null) return;
+    const ok = window.confirm(
+      `Xóa vĩnh viễn bài #${editingLessonId} khỏi database? Hành động không hoàn tác (gồm quiz, từ vựng, tiến độ học viên gắn bài này).`,
+    );
+    if (!ok) return;
+    setDeleting(true);
+    setError('');
+    setSuccess('');
     try {
-      const draftForSave = { ...draft, contentHtml };
-      const payload = mapDraftToCreatePayload(draftForSave, categoryId, {
-        title,
-        slug,
-        content: contentHtml,
-        estimatedMinutes,
-        isPublished,
-      });
-      await createLessonFromDraft(payload);
-      setSuccess('Đã lưu bài học vào database.');
-      setSavedLearnSlug(payload.slug);
-      setSavedWasPublished(Boolean(isPublished));
+      await deleteStaffLesson(editingLessonId);
+      setSuccess(`Đã xóa bài #${editingLessonId}.`);
       setDraft(null);
+      setTitle('');
+      setSlug('');
+      setContentHtml('');
+      setEditingLessonId(null);
       setFile(null);
       setPastedContent('');
       if (inputRef.current) inputRef.current.value = '';
     } catch (err) {
-      const msg = getApiErrorMessage(err, 'Lỗi lưu');
+      const msg = getApiErrorMessage(err, 'Lỗi xóa bài');
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
-      setSaving(false);
+      setDeleting(false);
     }
   };
 
-  const busy = loading || extracting;
+  const busy = loading || extracting || attaching || loadingLesson;
 
   const jlptCodes = ['N5', 'N4', 'N3', 'N2', 'N1'];
   const scannerAnimating = busy || Boolean(displaySourceText.trim());
@@ -766,7 +1213,17 @@ export function UploadLessonsTab() {
         ? 'mod-import__badge mod-import__badge--busy'
         : 'mod-import__badge mod-import__badge--ok';
   const systemBadgeText =
-    error && !draft ? 'CẦN KIỂM TRA' : busy ? 'ĐANG XỬ LÝ' : 'HỆ THỐNG SẴN SÀNG';
+    error && !draft
+      ? 'CẦN KIỂM TRA'
+      : busy && attaching
+        ? 'ĐANG TẢI FILE'
+        : busy && aiPhase === 'extract'
+          ? 'ĐANG TRÍCH CHỮ'
+          : busy && aiPhase === 'ai'
+            ? 'ĐANG GỌI AI'
+            : busy
+              ? 'ĐANG XỬ LÝ'
+              : 'HỆ THỐNG SẴN SÀNG';
 
   return (
     <div className="mod-import mod-import--studio">
@@ -779,18 +1236,8 @@ export function UploadLessonsTab() {
       >
         <div className="mod-import__header-text">
           <h2>Import bài học</h2>
-          <p>
-            Chọn file → <strong>xem trước ngay</strong> (PDF trong trình duyệt; PPTX/DOCX có thẻ hướng dẫn) → chỉnh JLPT / danh mục →
-            bấm <strong>Quét AI</strong>. Hai cột: <strong>Xem trước tài liệu</strong> và <strong>Kết quả AI</strong> (tab Từ vựng / Ngữ pháp / Bài đọc).
-          </p>
         </div>
       </FM.motion.header>
-
-      <p className="mod-import__notice">
-        <strong>Lưu ý:</strong> khi <strong>Quét AI</strong>, file được gửi lên server để <strong>trích chữ</strong> — không lưu file gốc lâu dài.
-        «Lưu bài học» ghi HTML, từ vựng, ngữ pháp, quiz. Server dùng <strong>OpenAI</strong> hoặc <strong>Ollama</strong> (có thể vài phút;
-        tối đa ~48k ký tự). <strong>Ảnh</strong> không trích chữ — dán OCR hoặc dùng PDF.
-      </p>
 
       {error ? <div className="mod-dash__alert mod-dash__alert--err">{error}</div> : null}
       {success || savedLearnSlug ? (
@@ -819,6 +1266,32 @@ export function UploadLessonsTab() {
               )}
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {editingLessonId != null ? (
+        <div className="mod-import-studio__editing-strip mod-import-studio__glass mod-import-studio__glass--tight">
+          <span className="mod-import-studio__editing-strip-text">
+            Đang sửa bài <strong>#{editingLessonId}</strong> — nút lưu bên dưới sẽ <strong>cập nhật</strong> bài này.
+          </span>
+          <div className="mod-import-studio__editing-strip-actions">
+            <button
+              type="button"
+              className="mod-dash__btn mod-dash__btn--outline mod-dash__btn--sm"
+              onClick={exitEditLessonContext}
+              disabled={loadingLesson || deleting}
+            >
+              Ngừng sửa bài này
+            </button>
+            <button
+              type="button"
+              className="mod-dash__btn mod-dash__btn--danger mod-dash__btn--sm"
+              onClick={confirmDeleteLesson}
+              disabled={deleting || loadingLesson}
+            >
+              {deleting ? 'Đang xóa…' : 'Xóa bài'}
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -983,9 +1456,34 @@ export function UploadLessonsTab() {
                 </div>
               </details>
 
-              <button type="button" className="mod-import-studio__scan-cta" disabled={busy} onClick={runAi}>
-                {loading ? 'Đang trích & gọi AI…' : 'Quét AI'}
-              </button>
+              <div className="mod-import-studio__cta-stack">
+                <button type="button" className="mod-import-studio__scan-cta" disabled={busy} onClick={runAi}>
+                  {loading && aiPhase === 'extract'
+                    ? 'Đang trích chữ (1/2)…'
+                    : loading && aiPhase === 'ai'
+                      ? 'Đang gọi AI (2/2)…'
+                      : loading
+                        ? 'Đang xử lý…'
+                        : 'Quét AI'}
+                </button>
+                <button type="button" className="mod-import-studio__no-ai-cta" disabled={busy} onClick={runExtractNoAi}>
+                  {extracting ? 'Đang trích chữ…' : 'Không dùng AI — lấy nội dung file → soạn bài'}
+                </button>
+                <p className="mod-import-studio__no-ai-hint">
+                  Dùng khi <strong>kết quả AI sai</strong>: chỉ trích chữ từ PDF/DOCX/PPTX (và phần dán kèm), chuyển thành HTML — <strong>không</strong> sinh từ vựng/ngữ pháp bằng AI. Đã chọn <strong>danh mục</strong> thì bài được <strong>tự lưu DB</strong> (hoặc chọn danh mục sau đó).
+                </p>
+                <button
+                  type="button"
+                  className="mod-import-studio__attach-doc-cta"
+                  disabled={busy || !file || !isSupportedDocFile(file)}
+                  onClick={runAttachFileNoExtract}
+                >
+                  {attaching ? 'Đang tải file lên…' : 'Đính kèm file — không trích chữ'}
+                </button>
+                <p className="mod-import-studio__attach-doc-hint">
+                  <strong>PDF:</strong> nhúng xem <strong>trực tiếp trong bài</strong> (iframe — không trích chữ). DOCX/PPTX: chỉ liên kết tải/mở. Có <strong>danh mục</strong> thì <strong>tự lưu DB</strong>. API/web khác domain → <code>VITE_API_URL</code>.
+                </p>
+              </div>
             </div>
           </div>
         </FM.motion.div>
@@ -1002,7 +1500,15 @@ export function UploadLessonsTab() {
               <div className="mod-import-studio__preview-head">
                 <h3>Xem trước tài liệu</h3>
                 <span className={`mod-import-studio__pill${busy ? ' mod-import-studio__pill--pulse' : ''}`}>
-                  {busy ? 'Đang quét…' : systemBadgeText}
+                  {busy && attaching
+                    ? 'Đang tải file lên…'
+                    : busy && aiPhase === 'extract'
+                      ? 'Trích chữ…'
+                      : busy && aiPhase === 'ai'
+                        ? 'AI đang soạn…'
+                        : busy
+                          ? 'Đang quét…'
+                          : systemBadgeText}
                 </span>
               </div>
               <div
@@ -1290,10 +1796,11 @@ export function UploadLessonsTab() {
               <div className="mod-import-studio__insight-scroll">
                 {!draft ? (
                   <div className="mod-import-studio__doc-empty mod-ai-empty-wait" style={{ minHeight: '200px' }}>
-                    <p className="mod-ai-empty-wait__title">Chưa tạo bằng AI</p>
+                    <p className="mod-ai-empty-wait__title">Chưa có bản nháp</p>
                     <p>
-                      Cột <strong>Xem trước tài liệu</strong> hiển thị PDF (nếu có) hoặc nội dung đã trích. Bấm <strong>Quét AI</strong>{' '}
-                      phía trên để AI sinh từ vựng, ngữ pháp và bài đọc tại đây.
+                      Cột <strong>Xem trước tài liệu</strong> hiển thị PDF hoặc nội dung đã trích. Bấm <strong>Quét AI</strong> để AI
+                      sinh từ vựng / ngữ pháp; hoặc <strong>Không dùng AI</strong> để chỉ đưa văn bản vào HTML rồi soạn tay — khi
+                      AI hay sai, nên dùng cách sau.
                     </p>
                   </div>
                 ) : insightTab === 'vocab' ? (
@@ -1509,6 +2016,20 @@ export function UploadLessonsTab() {
 
               <div className="mod-dash__draft-box mod-dash__draft-box--in-panel" style={{ border: 'none', background: 'transparent', padding: 0 }}>
                 <h4 className="mod-dash__upload-card-title">Chỉnh trước khi lưu</h4>
+                {(contentHtml || '').includes('lesson-attached-doc') ? (
+                  <div className="mod-import-studio__attach-pending-banner" role="status">
+                    {editingLessonId != null ? (
+                      <p>
+                        <strong>Tài liệu đã upload.</strong> Nhấn «Cập nhật bài học» bên dưới để ghi liên kết vào bài #{editingLessonId}.
+                      </p>
+                    ) : (
+                      <p>
+                        <strong>Đính kèm / import:</strong> nếu đã chọn <strong>danh mục</strong>, hệ thống <strong>tự lưu DB</strong> sau khi có nội dung — mở tab «Nội dung bài học» (Làm mới). Nếu chưa chọn danh mục, chọn xong sẽ{' '}
+                        <strong>tự lưu</strong>. Vẫn có thể chỉnh rồi bấm «Lưu bài học» như trước.
+                      </p>
+                    )}
+                  </div>
+                ) : null}
                 <label className="mod-dash__paste-label">
                   Tiêu đề
                   <input className="mod-dash__input" value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -1651,10 +2172,14 @@ export function UploadLessonsTab() {
                 <button
                   type="button"
                   className="mod-dash__btn mod-dash__btn--primary"
-                  disabled={saving || !categoryId}
+                  disabled={saving || !categoryId || loadingLesson}
                   onClick={saveLesson}
                 >
-                  {saving ? 'Đang lưu…' : 'Lưu bài học vào database'}
+                  {saving
+                    ? 'Đang lưu…'
+                    : editingLessonId != null
+                      ? 'Cập nhật bài học'
+                      : 'Lưu bài học vào database'}
                 </button>
               </div>
             </FM.motion.div>

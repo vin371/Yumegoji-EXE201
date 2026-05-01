@@ -16,7 +16,8 @@ namespace backend.Services.Learning;
 
 public class LessonAiImportService : ILessonAiImportService
 {
-    private const int MaxSourceChars = 48_000;
+    /// <summary>Giới hạn độ dài tài liệu gửi AI (token). Có thể hạ qua cấu hình Ollama riêng.</summary>
+    private const int MaxSourceChars = 200_000;
     /// <summary>Xem trước văn bản đã gửi AI (UI moderator) — không cắt quá ngắn.</summary>
     private const int AiResponseExtractPreviewChars = 12_000;
 
@@ -79,14 +80,14 @@ public class LessonAiImportService : ILessonAiImportService
             "vocabulary" => """
 
                 TRỌNG TÂM (moderator chọn «từ vựng»):
-                - Ưu tiên vocabulary đầy đủ (tối đa 25 mục), mỗi mục wordJp + reading + meaningVi khớp nguồn.
+                - Ưu tiên vocabulary đầy đủ theo tài liệu (tối đa 80 mục), mỗi mục wordJp + reading + meaningVi khớp nguồn.
                 - contentHtml: lặp cấu trúc rõ — mỗi từ một khối: dòng 1 từ Nhật, dòng 2 phiên âm kana, dòng 3 nghĩa tiếng Việt (dùng <p> hoặc <table> đơn giản).
                 - grammar/quiz có thể ít nếu tài liệu chỉ là danh sách từ.
                 """,
             "grammar" => """
 
                 TRỌNG TÂM (moderator chọn «ngữ pháp»):
-                - Ưu tiên grammar: pattern, meaningVi, examples (câu tiếng Nhật nguyên văn từ nguồn khi có).
+                - Ưu tiên grammar đầy đủ theo tài liệu (tối đa 40 mẫu): pattern, meaningVi, examples (câu tiếng Nhật nguyên văn từ nguồn khi có).
                 - contentHtml: giải thích mẫu câu, cấu trúc; vocabulary chỉ từ xuất hiện trong ví dụ.
                 """,
             "reading" => """
@@ -98,7 +99,8 @@ public class LessonAiImportService : ILessonAiImportService
             _ => """
 
                 TỰ NHẬN DIỆN LOẠI TÀI LIỆU (moderator chọn «AI tự chọn»):
-                - Xác định đây chủ yếu là từ vựng, ngữ pháp hay bài đọc; chọn cấu trúc JSON/HTML phù hợp, không trộn lộn xộn.
+                - Nếu tài liệu có CẢ từ vựng VÀ ngữ pháp — điền ĐẦY ĐỦ cả vocabulary lẫn grammar (không bỏ qua một phần để «gọn» JSON).
+                - contentHtml phải bao quát các mục chính trong nguồn (số đếm, mẫu câu, bảng…), không chỉ phần mở đầu.
                 - List từ: bảng/khối từ — đọc kana — nghĩa. Bài đọc: giữ đoạn văn trước, từ khó sau.
                 """
         };
@@ -128,9 +130,9 @@ public class LessonAiImportService : ILessonAiImportService
             <p><strong>勉強</strong></p><p>べんきょう</p><p>học, ôn bài</p>
             Các dòng (1)(2)(3) ở trên chỉ là mô tả vai trò — KHÔNG ghi chữ «(1) từ/kanji» vào HTML thật.
             - estimatedMinutes: số nguyên 5–45.
-            - vocabulary: mảng object (wordJp, reading, meaningVi) tối đa 25 mục — bám từ có trong tài liệu.
-            - grammar: mảng object (pattern, meaningVi, examples) — examples là mảng câu tiếng Nhật (nguyên văn từ nguồn khi có thể).
-            - quiz: mảng object (question, options gồm 4 chuỗi, correctIndex 0..3) tối đa 12 câu.
+            - vocabulary: mảng object (wordJp, reading, meaningVi) tối đa 80 mục — liệt kê mọi từ/mục từ vựng rõ ràng trong tài liệu, không tự cắt bớt.
+            - grammar: mảng object (pattern, meaningVi, examples) tối đa 40 mục — examples là mảng câu tiếng Nhật (nguyên văn từ nguồn khi có thể).
+            - quiz: mảng object (question, options gồm 4 chuỗi, correctIndex 0..3) tối đa 20 câu.
             QUIZ — CHỈ CHUỖI THUẦN (plain text): question và từng phần tử options KHÔNG chứa thẻ HTML (cấm <strong>, <p>, …). Chỉ chữ hỏi/đáp án bằng tiếng Nhật hoặc tiếng Việt, đúng chủ đề bài; không sinh tiếng Trung trừ khi tài liệu nguồn có.
             Nếu thiếu thông tin, dùng mảng rỗng. correctIndex hợp lệ với options.
 
@@ -522,7 +524,7 @@ public class LessonAiImportService : ILessonAiImportService
         _logger.LogWarning("AI JSON parse failed: {Snippet}",
             normalized.Length > 240 ? normalized[..240] : normalized);
         throw new InvalidOperationException(
-            "AI trả JSON không đọc được. Thử model khác (OpenAI gpt-4o-mini / Ollama có hỗ trợ JSON) hoặc rút ngắn tài liệu (giới hạn nguồn: LessonImport:OllamaMaxSourceChars, tối đa 48k).");
+            "AI trả JSON không đọc được. Thử model khác (OpenAI gpt-4o-mini / Ollama có hỗ trợ JSON) hoặc rút ngắn tài liệu (giới hạn nguồn: LessonImport:OllamaMaxSourceChars, tối đa 200k).");
     }
 
     private static bool TryDeserializeAiDraft(string json, out AiLessonDraftDto draft)

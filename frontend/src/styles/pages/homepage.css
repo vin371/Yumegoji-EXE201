@@ -150,13 +150,16 @@
   line-height: 1.08;
   margin: 0 0 0.75rem;
   color: var(--text-h);
+  /* Tránh ngắt giữa cụm tiếng Việt (Georgia không đủ glyph → fallback gãy giữa từ). */
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .sn-hero__accent {
   display: inline-block;
   color: #bd0039;
   font-style: italic;
-  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-family: var(--heading);
   font-weight: 700;
 }
 

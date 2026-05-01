@@ -9,6 +9,15 @@ const INTRO_GUEST =
 const INTRO_MEMBER =
   'Chào bạn! Mình vẫn là chatbot YumeGo-ji — bạn có thể hỏi mình như khách. Nếu cần nói chuyện trực tiếp với người, hãy bấm nút "Mở chat với điều hành viên" phía trên.';
 
+/** Gửi nguyên câu này — khớp template backend để trả lời nhanh cả khi chưa bật LLM. */
+const CHAT_SUGGESTIONS = [
+  { label: 'JLPT / N5', query: 'Lộ trình JLPT và bắt đầu N5 như thế nào?' },
+  { label: 'Học bài', query: 'Tôi muốn vào học bài và khóa học ở đâu?' },
+  { label: 'Khu game', query: 'Mini game và khu Play ở đâu?' },
+  { label: 'Premium', query: 'Nâng cấp Premium như thế nào?' },
+  { label: 'Chat điều hành', query: 'Làm sao để chat với điều hành viên?' },
+];
+
 function sourceLabel(source) {
   if (source === 'llm') return ' · Chatbot (LLM)';
   if (source === 'template') return ' · Chatbot (mẫu)';
@@ -37,25 +46,31 @@ export function ChatbotWidget() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, open]);
 
-  const sendGuest = useCallback(async () => {
-    const text = input.trim();
-    if (!text || sending) return;
-    setInput('');
-    setError('');
-    setMessages((m) => [...m, { role: 'user', text }]);
-    setSending(true);
-    try {
-      const res = await postGuestChatbotMessage(text);
-      const reply = res?.reply ?? 'Xin lỗi, chatbot chưa trả lời được.';
-      setMessages((m) => [...m, { role: 'bot', text: reply, source: res?.source }]);
-    } catch (e) {
-      const msg = e?.response?.data?.message || e?.message || 'Không gửi được tin. Thử lại sau.';
-      setError(msg);
-      setMessages((m) => [...m, { role: 'bot', text: `Lỗi: ${msg}` }]);
-    } finally {
-      setSending(false);
-    }
-  }, [input, sending]);
+  const sendGuest = useCallback(
+    async (preset) => {
+      const raw = typeof preset === 'string' ? preset : input;
+      const text = raw.trim();
+      if (!text || sending) return;
+      setInput('');
+      setError('');
+      setMessages((m) => [...m, { role: 'user', text }]);
+      setSending(true);
+      try {
+        const res = await postGuestChatbotMessage(text);
+        const reply = res?.reply ?? 'Xin lỗi, chatbot chưa trả lời được.';
+        setMessages((m) => [...m, { role: 'bot', text: reply, source: res?.source }]);
+      } catch (e) {
+        const msg = e?.response?.data?.message || e?.message || 'Không gửi được tin. Thử lại sau.';
+        setError(msg);
+        setMessages((m) => [...m, { role: 'bot', text: `Lỗi: ${msg}` }]);
+      } finally {
+        setSending(false);
+      }
+    },
+    [input, sending],
+  );
+
+  const showSuggestionChips = open && messages.length > 0 && !messages.some((m) => m.role === 'user') && !sending;
 
   const openModeratorChat = useCallback(async () => {
     setError('');
@@ -130,6 +145,21 @@ export function ChatbotWidget() {
               >
                 {modLoading ? 'Đang mở phòng chat…' : 'Mở chat với điều hành viên'}
               </button>
+            </div>
+          ) : null}
+
+          {showSuggestionChips ? (
+            <div className="support-chat-panel__suggestions" role="group" aria-label="Gợi ý câu hỏi">
+              {CHAT_SUGGESTIONS.map((s) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  className="support-chat-panel__suggestion-chip"
+                  onClick={() => void sendGuest(s.query)}
+                >
+                  {s.label}
+                </button>
+              ))}
             </div>
           ) : null}
 

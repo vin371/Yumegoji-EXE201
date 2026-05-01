@@ -288,10 +288,6 @@ export function ChatMonitorTab() {
         <div className="mod-dash__panel-head mod-dash__panel-head--row">
           <div>
             <h2 className="mod-dash__panel-title">Phòng chat đang hoạt động</h2>
-            <p className="mod-dash__panel-desc">
-              Danh sách phòng công khai / theo cấp / nhóm — số tin và online từ API. Ghim tin:{' '}
-              <code className="mod-dash__code">POST /api/Chat/rooms/&#123;id&#125;/messages/&#123;msg&#125;/pin</code> (moderator).
-            </p>
           </div>
           <button type="button" className="mod-dash__btn mod-dash__btn--ghost" onClick={load} disabled={loading}>
             ⟳ Làm mới
@@ -355,10 +351,6 @@ export function ChatMonitorTab() {
         <div className="mod-dash__panel-head mod-dash__panel-head--row">
           <div>
             <h3 className="mod-dash__subsection-title">Người dùng online</h3>
-            <p className="mod-dash__subsection-desc">
-              Dữ liệu từ <code className="mod-dash__code">GET /api/Chat/rooms/&#123;id&#125;/members?includeOnline=true</code> (moderator) —
-              đồng bộ bảng presence (heartbeat ~45s).
-            </p>
           </div>
           <button type="button" className="mod-dash__btn mod-dash__btn--ghost" onClick={refreshFeed} disabled={loading || feedLoading || usedFallback}>
             ⟳ Cập nhật luồng
@@ -388,10 +380,6 @@ export function ChatMonitorTab() {
 
       <div className="mod-dash__panel">
         <h3 className="mod-dash__subsection-title">Luồng tin nhắn gần đây</h3>
-        <p className="mod-dash__subsection-desc">
-          Lấy từ <code className="mod-dash__code">GET /api/Chat/rooms/&#123;id&#125;/messages</code> (moderator đọc được phòng public/level/group dù chưa join).
-          Tô màu theo từ khóa cục bộ bên dưới; realtime đầy đủ: SignalR hub <code className="mod-dash__code">/hubs/chat</code>.
-        </p>
         {liveFeed.length === 0 && !feedLoading && !loading && !usedFallback ? (
           <p className="mod-dash__muted">Chưa có tin trong các phòng vừa quét hoặc chưa có tin gần đây.</p>
         ) : null}

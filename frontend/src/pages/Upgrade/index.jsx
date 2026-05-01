@@ -286,7 +286,6 @@ export default function UpgradePage() {
               <div className="upgrade-pay__token">
                 <strong>Nội dung chuyển:</strong> <code>{intent.token}</code>
               </div>
-              <div className="upgrade-pay__hint">Token mẫu theo chuẩn ngắn: NAPxxxxxYume (12 ký tự).</div>
             </div>
 
             <div className="upgrade-pay__qr">

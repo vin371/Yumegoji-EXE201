@@ -1,25 +1,31 @@
-import { useState } from 'react';
-import { modLessonEdits, modPendingContributions } from '../mockModerator';
+import { useCallback, useState } from 'react';
+import { StaffLessonsHubTab } from './StaffLessonsHubTab';
 import { UploadLessonsTab } from './UploadLessonsTab';
 
 const HUB_NAV = [
   { id: 'import', label: 'Import', desc: 'Tải tệp & AI' },
-  { id: 'history', label: 'Lịch sử', desc: 'Chỉnh sửa gần đây' },
-  { id: 'approvals', label: 'Phê duyệt', desc: 'Đóng góp học viên' },
+  { id: 'lessons', label: 'Nội dung bài học', desc: 'Danh sách, xem, xóa' },
 ];
 
 export function ContentTab() {
-  const [contrib, setContrib] = useState(modPendingContributions);
   const [hubView, setHubView] = useState('import');
   /** Remount Import để «+ Bài học mới» xoá form */
   const [importMountKey, setImportMountKey] = useState(0);
+  /** Khi chọn «Sửa trong Import» từ danh sách — tải bài vào form Import. */
+  const [importLessonId, setImportLessonId] = useState(null);
 
-  function approve(id) {
-    setContrib((c) => c.filter((x) => x.id !== id));
-  }
+  const handleConsumedInitialStaffLesson = useCallback(() => {
+    setImportLessonId(null);
+  }, []);
+
+  const handleEditInImport = useCallback((lessonId) => {
+    setImportLessonId(lessonId);
+    setHubView('import');
+  }, []);
 
   function newLesson() {
     setHubView('import');
+    setImportLessonId(null);
     setImportMountKey((k) => k + 1);
   }
 
@@ -43,7 +49,7 @@ export function ContentTab() {
               onClick={() => setHubView(item.id)}
             >
               <span className="mod-hub__nav-icon" aria-hidden>
-                {item.id === 'import' ? '📥' : item.id === 'history' ? '📜' : '✅'}
+                {item.id === 'import' ? '📥' : '📚'}
               </span>
               {item.label}
             </button>
@@ -55,70 +61,15 @@ export function ContentTab() {
       </aside>
 
       <div className="mod-hub__main">
-        {hubView === 'import' ? <UploadLessonsTab key={importMountKey} /> : null}
-
-        {hubView === 'history' ? (
-          <div className="mod-hub__panel mod-dash__panel">
-            <h2 className="mod-dash__panel-title">Lịch sử chỉnh sửa nội dung</h2>
-            <div className="mod-dash__table-wrap">
-              <table className="mod-dash__table">
-                <thead>
-                  <tr>
-                    <th>Bài / gói</th>
-                    <th>Người sửa</th>
-                    <th>Thời điểm</th>
-                    <th>Thay đổi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {modLessonEdits.map((e) => (
-                    <tr key={e.id}>
-                      <td>
-                        <strong>{e.lesson}</strong>
-                      </td>
-                      <td className="mod-dash__mono">{e.editor}</td>
-                      <td className="mod-dash__mono">{e.at}</td>
-                      <td>{e.change}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+        {hubView === 'import' ? (
+          <UploadLessonsTab
+            key={importMountKey}
+            initialStaffLessonId={importLessonId}
+            onConsumedInitialStaffLesson={handleConsumedInitialStaffLesson}
+          />
         ) : null}
 
-        {hubView === 'approvals' ? (
-          <div className="mod-hub__panel mod-dash__panel">
-            <h2 className="mod-dash__panel-title">Phê duyệt đóng góp (mẫu)</h2>
-            <p className="mod-dash__panel-desc">
-              Nội dung do học viên gửi — duyệt / từ chối (demo chỉ cập nhật state trình duyệt).
-            </p>
-            {contrib.length === 0 ? (
-              <p className="mod-dash__muted">Không có bản chờ duyệt.</p>
-            ) : (
-              <ul className="mod-dash__contrib-list">
-                {contrib.map((c) => (
-                  <li key={c.id} className="mod-dash__contrib-item">
-                    <div>
-                      <strong>{c.title}</strong>
-                      <div className="mod-dash__muted">
-                        @{c.author} · {c.at}
-                      </div>
-                    </div>
-                    <div className="mod-dash__contrib-actions">
-                      <button type="button" className="mod-dash__btn mod-dash__btn--primary" onClick={() => approve(c.id)}>
-                        Phê duyệt
-                      </button>
-                      <button type="button" className="mod-dash__btn mod-dash__btn--outline" onClick={() => approve(c.id)}>
-                        Từ chối
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ) : null}
+        {hubView === 'lessons' ? <StaffLessonsHubTab onEditInImport={handleEditInImport} /> : null}
       </div>
     </div>
   );

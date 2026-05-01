@@ -40,6 +40,23 @@ public class LessonListItemDto
     public int SortOrder { get; set; }
 }
 
+/// <summary>Danh sách bài cho moderator/admin — gồm chưa xuất bản.</summary>
+public class StaffLessonListItemDto
+{
+    public int Id { get; set; }
+    public int CategoryId { get; set; }
+    public int LevelId { get; set; }
+    public string CategoryType { get; set; } = "";
+    public string CategoryName { get; set; } = null!;
+    public string Title { get; set; } = null!;
+    public string Slug { get; set; } = null!;
+    public int EstimatedMinutes { get; set; }
+    public bool IsPremium { get; set; }
+    public bool IsPublished { get; set; }
+    public int SortOrder { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
 public class LessonDetailDto
 {
     public int Id { get; set; }
@@ -51,6 +68,8 @@ public class LessonDetailDto
     public string? Content { get; set; }
     public int EstimatedMinutes { get; set; }
     public bool IsPremium { get; set; }
+    /// <summary>Staff xem bài nháp; API public chỉ trả bài đã publish.</summary>
+    public bool IsPublished { get; set; }
     public int SortOrder { get; set; }
 }
 

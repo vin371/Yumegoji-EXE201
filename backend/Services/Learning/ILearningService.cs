@@ -9,6 +9,15 @@ public interface ILearningService
     Task<IReadOnlyList<LevelDto>> GetLevelsAsync();
     Task<IReadOnlyList<LessonCategoryDto>> GetLessonCategoriesAsync(int? levelId, string? type);
     Task<PagedResultDto<LessonListItemDto>> GetLessonsPagedAsync(int? levelId, int? categoryId, int page, int pageSize, bool? isPremium);
+
+    /// <summary>Tất cả bài học (đã / chưa publish) — màn hình quản trị nội dung.</summary>
+    Task<PagedResultDto<StaffLessonListItemDto>> GetStaffLessonsPagedAsync(
+        int? levelId,
+        int? categoryId,
+        string? search,
+        bool? isPublished,
+        int page,
+        int pageSize);
     Task<bool> IsUserPremiumAsync(int userId);
     Task<LessonFullDetailDto?> GetLessonDetailByIdAsync(int id);
     Task<LessonFullDetailDto?> GetLessonDetailBySlugAsync(string slug);
@@ -52,6 +61,12 @@ public interface ILearningService
     Task<LessonFullDetailDto> StaffCreateLessonFromDraftAsync(
         StaffCreateLessonFromDraftRequest request,
         int? createdByUserId);
+
+    /// <summary>
+    /// Thay toàn bộ nội dung gắn bài (từ vựng, kanji, ngữ pháp, quiz) + metadata/HTML như tạo mới.
+    /// Không xóa tiến độ/bookmark học viên.
+    /// </summary>
+    Task<LessonFullDetailDto?> StaffUpdateLessonFromDraftAsync(int lessonId, StaffCreateLessonFromDraftRequest request);
 
     /// <summary>Xóa hẳn bài học và dữ liệu gắn bài (từ vựng, kanji, ngữ pháp, quiz). Tiến độ/bookmark học viên cũng bị xóa theo FK.</summary>
     Task<bool> StaffDeleteLessonAsync(int lessonId);

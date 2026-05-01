@@ -62,18 +62,21 @@ export function SystemAnnouncementBanner() {
   const title = announcement?.title ?? announcement?.Title ?? '';
   const content = announcement?.content ?? announcement?.Content ?? '';
   const type = announcement?.type ?? announcement?.Type ?? '';
+  const typeNorm = String(type).trim().toLowerCase();
 
   if (!id || !title) return null;
   if (String(dismissedId) === String(id)) return null;
 
   const typeLabel =
-    type === 'maintenance'
+    typeNorm === 'maintenance'
       ? 'Bảo trì'
-      : type === 'event'
+      : typeNorm === 'event'
         ? 'Sự kiện'
-        : type === 'promo'
+        : typeNorm === 'promo'
           ? 'Khuyến mãi'
-          : type || 'Thông báo';
+          : typeNorm === 'info' || typeNorm === ''
+            ? 'Thông báo'
+            : String(type).trim() || 'Thông báo';
 
   return (
     <div className="sys-announce" role="region" aria-label="Thông báo hệ thống">

@@ -216,6 +216,146 @@ public partial class LearningService
         return await BuildLessonFullAsync(lesson, cat, true);
     }
 
+    public async Task<LessonFullDetailDto?> StaffUpdateLessonFromDraftAsync(
+        int lessonId,
+        StaffCreateLessonFromDraftRequest request)
+    {
+        var lesson = await _db.Lessons.FirstOrDefaultAsync(l => l.Id == lessonId);
+        if (lesson == null) return null;
+
+        if (string.IsNullOrWhiteSpace(request.Title))
+            throw new InvalidOperationException("Tiêu đề bài học là bắt buộc.");
+        if (string.IsNullOrWhiteSpace(request.Slug))
+            throw new InvalidOperationException("Slug là bắt buộc.");
+
+        var cat = await _db.LessonCategories.FirstOrDefaultAsync(c => c.Id == request.CategoryId)
+            ?? throw new InvalidOperationException("Danh mục bài học không tồn tại.");
+
+        var slug = request.Slug.Trim();
+        if (await _db.Lessons.AnyAsync(l => l.Slug == slug && l.Id != lessonId))
+            throw new InvalidOperationException("Slug đã được bài học khác sử dụng.");
+
+        lesson.CategoryId = request.CategoryId;
+        lesson.Title = request.Title.Trim();
+        lesson.Slug = slug;
+        lesson.Content = request.Content;
+        lesson.EstimatedMinutes = Math.Clamp(request.EstimatedMinutes, 1, 240);
+        lesson.IsPublished = request.IsPublished;
+        var now = DateTime.UtcNow;
+        lesson.UpdatedAt = now;
+
+        var vocabs = await _db.VocabularyItems.Where(v => v.LessonId == lessonId).ToListAsync();
+        _db.VocabularyItems.RemoveRange(vocabs);
+        var kanjis = await _db.KanjiItems.Where(k => k.LessonId == lessonId).ToListAsync();
+        _db.KanjiItems.RemoveRange(kanjis);
+        var grammars = await _db.GrammarItems.Where(g => g.LessonId == lessonId).ToListAsync();
+        _db.GrammarItems.RemoveRange(grammars);
+        var quizzes = await _db.LessonQuizQuestions.Where(q => q.LessonId == lessonId).ToListAsync();
+        _db.LessonQuizQuestions.RemoveRange(quizzes);
+        await _db.SaveChangesAsync();
+
+        var levelId = cat.LevelId;
+
+        if (request.Vocabulary != null)
+        {
+            var o = 0;
+            foreach (var v in request.Vocabulary)
+            {
+                if (string.IsNullOrWhiteSpace(v.WordJp)) continue;
+                o++;
+                _db.VocabularyItems.Add(new VocabularyItem
+                {
+                    LessonId = lessonId,
+                    WordJp = v.WordJp.Trim(),
+                    Reading = v.Reading?.Trim(),
+                    MeaningVi = v.MeaningVi?.Trim(),
+                    MeaningEn = v.MeaningEn?.Trim(),
+                    ExampleSentence = v.ExampleSentence?.Trim(),
+                    AudioUrl = string.IsNullOrWhiteSpace(v.AudioUrl) ? null : v.AudioUrl.Trim(),
+                    SortOrder = v.SortOrder ?? o,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                });
+            }
+        }
+
+        if (request.Grammar != null)
+        {
+            var o = 0;
+            foreach (var g in request.Grammar)
+            {
+                if (string.IsNullOrWhiteSpace(g.Pattern)) continue;
+                o++;
+                _db.GrammarItems.Add(new GrammarItem
+                {
+                    LessonId = lessonId,
+                    Pattern = g.Pattern.Trim(),
+                    Structure = g.Structure,
+                    MeaningVi = g.MeaningVi,
+                    MeaningEn = g.MeaningEn,
+                    ExampleSentences = g.ExampleSentences,
+                    LevelId = g.LevelId ?? levelId,
+                    SortOrder = g.SortOrder ?? o,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                });
+            }
+        }
+
+        if (request.Kanji != null)
+        {
+            var o = 0;
+            foreach (var k in request.Kanji)
+            {
+                if (string.IsNullOrWhiteSpace(k.Character)) continue;
+                o++;
+                _db.KanjiItems.Add(new KanjiItem
+                {
+                    LessonId = lessonId,
+                    KanjiChar = k.Character.Trim(),
+                    ReadingsOn = k.ReadingsOn?.Trim(),
+                    ReadingsKun = k.ReadingsKun?.Trim(),
+                    MeaningVi = k.MeaningVi?.Trim(),
+                    MeaningEn = k.MeaningEn?.Trim(),
+                    StrokeCount = k.StrokeCount,
+                    JlptLevel = k.JlptLevel?.Trim(),
+                    SortOrder = k.SortOrder ?? o,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                });
+            }
+        }
+
+        if (request.Quiz != null)
+        {
+            var o = 0;
+            foreach (var q in request.Quiz)
+            {
+                if (string.IsNullOrWhiteSpace(q.Question) || q.Options == null || q.Options.Count < 2)
+                    continue;
+                o++;
+                var opts = q.Options.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).ToList();
+                if (opts.Count < 2) continue;
+                var correct = Math.Clamp(q.CorrectIndex, 0, opts.Count - 1);
+                _db.LessonQuizQuestions.Add(new LessonQuizQuestion
+                {
+                    LessonId = lessonId,
+                    Question = q.Question.Trim(),
+                    OptionsJson = JsonSerializer.Serialize(opts),
+                    CorrectIndex = correct,
+                    SortOrder = q.SortOrder ?? o,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                });
+            }
+        }
+
+        lesson.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return await BuildLessonFullAsync(lesson, cat, true);
+    }
+
     public async Task<bool> StaffDeleteLessonAsync(int lessonId)
     {
         var lesson = await _db.Lessons.FirstOrDefaultAsync(l => l.Id == lessonId);

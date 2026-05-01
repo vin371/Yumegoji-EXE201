@@ -579,6 +579,28 @@ html[data-theme='dark'] .app-main--learner:has(.learn-layout--shodo) {
   color: var(--color-text-secondary, #334155);
 }
 
+/* Fade-in + trượt lên khi cuộn (khác .learn-reveal = khối <details> đáp án). */
+.learn-scroll-reveal {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  transition:
+    opacity 0.52s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.52s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.learn-scroll-reveal.learn-scroll-reveal--visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learn-scroll-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 .learn-table__kanji {
   font-size: 1.35rem;
   font-weight: 600;
@@ -812,6 +834,53 @@ html[data-theme='dark'] .app-main--learner:has(.learn-layout--shodo) {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
+}
+
+/* PDF nhúng trực tiếp (đính kèm không trích chữ) */
+.learn-lesson__html .lesson-pdf-frame-wrap {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 0.75rem;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.learn-lesson__html iframe.lesson-pdf-iframe {
+  display: block;
+  width: 100%;
+  min-height: min(72vh, 720px);
+  max-width: 100%;
+  border: 0;
+}
+
+.learn-lesson__html .lesson-pdf-fallback {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+/* Bài từ API: một cột đọc dài (ẩn lưới «Ôn từng mục» trùng HTML) */
+.learn-lesson--scroll-reading .learn-lesson__readable-stack {
+  gap: 1.75rem;
+}
+
+.learn-lesson--scroll-reading .learn-lesson__html {
+  max-width: 48rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-bottom: 1.5rem;
+  font-size: 1.05rem;
+  line-height: 1.75;
+  letter-spacing: 0.012em;
+}
+
+.learn-lesson--scroll-reading .learn-lesson__html p {
+  margin-bottom: 1rem;
+}
+
+.learn-lesson--scroll-reading .learn-lesson__html .lesson-attached-doc {
+  margin: 1.5rem 0;
 }
 
 .learn-lesson__html a {

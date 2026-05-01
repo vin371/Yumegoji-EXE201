@@ -98,6 +98,65 @@ public partial class LearningService
         };
     }
 
+    public async Task<PagedResultDto<StaffLessonListItemDto>> GetStaffLessonsPagedAsync(
+        int? levelId,
+        int? categoryId,
+        string? search,
+        bool? isPublished,
+        int page,
+        int pageSize)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var q = from l in _db.Lessons
+            join c in _db.LessonCategories on l.CategoryId equals c.Id
+            select new { l, c };
+
+        if (levelId.HasValue)
+            q = q.Where(x => x.c.LevelId == levelId.Value);
+        if (categoryId.HasValue)
+            q = q.Where(x => x.l.CategoryId == categoryId.Value);
+        if (isPublished.HasValue)
+            q = q.Where(x => x.l.IsPublished == isPublished.Value);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            q = q.Where(x => x.l.Title.Contains(term) || x.l.Slug.Contains(term));
+        }
+
+        var total = await q.CountAsync();
+        var items = await q
+            .OrderByDescending(x => x.l.UpdatedAt)
+            .ThenBy(x => x.l.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new StaffLessonListItemDto
+            {
+                Id = x.l.Id,
+                CategoryId = x.l.CategoryId,
+                LevelId = x.c.LevelId,
+                CategoryType = x.c.Type,
+                CategoryName = x.c.Name,
+                Title = x.l.Title,
+                Slug = x.l.Slug,
+                EstimatedMinutes = x.l.EstimatedMinutes,
+                IsPremium = x.l.IsPremium || x.c.IsPremium,
+                IsPublished = x.l.IsPublished,
+                SortOrder = x.l.SortOrder,
+                UpdatedAt = x.l.UpdatedAt
+            })
+            .ToListAsync();
+
+        return new PagedResultDto<StaffLessonListItemDto>
+        {
+            Items = items,
+            TotalCount = total,
+            Page = page,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<bool> IsUserPremiumAsync(int userId)
     {
         if (userId < 1) return false;
@@ -146,6 +205,7 @@ public partial class LearningService
             Content = l.Content,
             EstimatedMinutes = l.EstimatedMinutes,
             IsPremium = l.IsPremium || c.IsPremium,
+            IsPublished = l.IsPublished,
             SortOrder = l.SortOrder
         };
 

@@ -1,4 +1,6 @@
+using System;
 using System.IO;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,6 +8,7 @@ using backend.Authorization;
 using backend.DTOs.Learning;
 using backend.Services.Learning;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,18 +20,24 @@ namespace backend.Controllers;
 [Authorize(Policy = AuthPolicies.Staff)]
 public class ModeratorLessonImportController : ControllerBase
 {
-    private const int ExtractResponseMaxChars = 200_000;
+    /// <summary>Trả về gần như toàn bộ văn bản trích (tránh cắt sớm khi tài liệu dài).</summary>
+    private const int ExtractResponseMaxChars = 2_000_000;
     private const int ExtractPreviewMaxChars = 2_000;
+
+    private static readonly string[] UploadDocumentExtensions = { ".pdf", ".docx", ".pptx" };
 
     private readonly ILessonAiImportService _aiImport;
     private readonly ILearningService _learning;
+    private readonly IWebHostEnvironment _env;
 
     public ModeratorLessonImportController(
         ILessonAiImportService aiImport,
-        ILearningService learning)
+        ILearningService learning,
+        IWebHostEnvironment env)
     {
         _aiImport = aiImport;
         _learning = learning;
+        _env = env;
     }
 
     private int? GetOptionalUserId()
@@ -83,6 +92,48 @@ public class ModeratorLessonImportController : ControllerBase
         }
     }
 
+    /// <summary>Lưu PDF/DOCX/PPTX lên wwwroot/uploads — không trích chữ; trả URL tĩnh để chèn vào HTML bài học.</summary>
+    [HttpPost("upload-document")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(32_000_000)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 32_000_000)]
+    // Không dùng [FromForm] trên IFormFile — Swashbuckle ném SwaggerGeneratorException khi sinh swagger.json.
+    public async Task<IActionResult> UploadDocument(IFormFile? file, CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { message = "Gửi file .pdf / .docx / .pptx (form field: file)." });
+
+        var safeName = Path.GetFileName(file.FileName);
+        if (string.IsNullOrWhiteSpace(safeName))
+            return BadRequest(new { message = "Tên file không hợp lệ." });
+
+        var ext = Path.GetExtension(safeName);
+        if (string.IsNullOrEmpty(ext) ||
+            !UploadDocumentExtensions.Contains(ext, StringComparer.OrdinalIgnoreCase))
+        {
+            return BadRequest(new { message = "Chỉ cho phép .pdf, .docx hoặc .pptx." });
+        }
+
+        var uploadsRoot = _env.WebRootPath;
+        if (string.IsNullOrWhiteSpace(uploadsRoot))
+            uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+
+        var dir = Path.Combine(uploadsRoot, "uploads");
+        if (!Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
+
+        var storedName = $"{Guid.NewGuid():N}{ext}";
+        var fullPath = Path.Combine(dir, storedName);
+
+        await using (var stream = System.IO.File.Create(fullPath))
+        {
+            await file.CopyToAsync(stream, cancellationToken);
+        }
+
+        var url = $"/uploads/{storedName}";
+        return Ok(new { url, originalFileName = safeName });
+    }
+
     /// <summary>Upload PDF/DOCX hoặc gửi text — trích nội dung và gọi AI sinh bản nháp JSON.</summary>
     [HttpPost("generate-draft")]
     [Consumes("multipart/form-data")]
@@ -130,7 +181,8 @@ public class ModeratorLessonImportController : ControllerBase
     {
         form ??= new GenerateLessonDraftForm();
         var file = form.File;
-        var text = form.Text;
+        var trimmedText = (form.Text ?? "").Trim();
+
         var plain = "";
 
         if (file != null && file.Length > 0)
@@ -143,8 +195,14 @@ public class ModeratorLessonImportController : ControllerBase
                 return (null, extractError);
         }
 
-        if (string.IsNullOrWhiteSpace(plain) && !string.IsNullOrWhiteSpace(text))
-            plain = text.Trim();
+        /* Gộp file + ô dán: trước đây chỉ dùng text khi file trích rỗng → moderator dán thêm vẫn bị mất. */
+        if (string.IsNullOrWhiteSpace(plain))
+            plain = trimmedText;
+        else if (trimmedText.Length > 0)
+        {
+            if (!plain.Contains(trimmedText, StringComparison.Ordinal))
+                plain = plain + "\n\n" + trimmedText;
+        }
 
         if (string.IsNullOrWhiteSpace(plain))
         {

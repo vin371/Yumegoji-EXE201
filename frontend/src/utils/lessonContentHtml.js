@@ -20,6 +20,17 @@ function isMostlyHtml(s) {
   return /^<[!/?a-z]/i.test(t);
 }
 
+/** Cấu hình chung: cho phép nhúng PDF (iframe) từ /uploads hoặc URL API — không bật script/object. */
+export const LESSON_BODY_PURIFY_CONFIG = {
+  USE_PROFILES: { html: true },
+  ADD_TAGS: ['iframe'],
+  ADD_ATTR: ['allow', 'allowfullscreen', 'loading', 'referrerpolicy', 'frameborder', 'scrolling', 'title'],
+};
+
+export function sanitizeLessonBodyHtml(html) {
+  return DOMPurify.sanitize(String(html ?? ''), LESSON_BODY_PURIFY_CONFIG);
+}
+
 /**
  * Nội dung bài từ API: có thể là HTML (moderator) hoặc Markdown (import/AI).
  * Trả về chuỗi HTML đã sanitize để dùng với dangerouslySetInnerHTML.
@@ -35,8 +46,8 @@ export function getLessonBodyHtml(raw) {
   }
 
   if (isMostlyHtml(text)) {
-    return DOMPurify.sanitize(text, { USE_PROFILES: { html: true } });
+    return sanitizeLessonBodyHtml(text);
   }
 
-  return DOMPurify.sanitize(marked.parse(text));
+  return sanitizeLessonBodyHtml(marked.parse(text));
 }

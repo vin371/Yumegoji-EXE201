@@ -9,6 +9,26 @@
   margin: 0 auto;
 }
 
+/* Neon Tokyo — cục bộ /play (dark): glow cyan / rose, không phủ toàn app */
+html[data-theme='dark'] .play-layout {
+  --play-neon-cyan: #00e5e8;
+  --play-neon-rose: #ff3d5c;
+  background:
+    radial-gradient(900px 380px at 100% -8%, rgba(0, 229, 232, 0.11), transparent 58%),
+    radial-gradient(720px 320px at -5% 102%, rgba(255, 61, 92, 0.09), transparent 55%),
+    linear-gradient(180deg, rgba(13, 13, 13, 0.25), transparent 42%),
+    transparent;
+}
+
+html[data-theme='dark'] .play-layout--session .play-expbar {
+  border-color: rgba(0, 229, 232, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(255, 61, 92, 0.12),
+    0 14px 40px -12px rgba(0, 229, 232, 0.08),
+    0 12px 36px rgba(0, 0, 0, 0.35);
+  background: color-mix(in srgb, var(--color-surface, #1e1b4b) 88%, #0d0d0d 12%);
+}
+
 .play-layout--hub {
   max-width: min(1240px, 100%);
   padding-left: clamp(0.75rem, 2vw, 1.5rem);
@@ -33,12 +53,6 @@
   border: 1px solid rgba(190, 24, 50, 0.14);
   background: color-mix(in srgb, #fff 94%, #fff1f2);
   box-shadow: 0 12px 36px rgba(180, 30, 50, 0.08);
-}
-
-html[data-theme='dark'] .play-layout--session .play-expbar {
-  background: color-mix(in srgb, #0f111a 92%, #1f2937);
-  border-color: rgba(248, 113, 113, 0.18);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
 }
 
 .play-expbar__row--title {
@@ -84,6 +98,10 @@ html[data-theme='dark'] .play-layout--session .play-expbar {
 
 .play-layout--session .play-expbar__fill {
   background: linear-gradient(90deg, #be123c, #e11d48);
+}
+
+html[data-theme='dark'] .play-layout--session .play-expbar__fill {
+  background: linear-gradient(90deg, var(--play-neon-rose, #ff3d5c), var(--play-neon-cyan, #00e5e8));
 }
 
 html[data-theme='dark'] .play-layout--session .play-expbar__rank-text {
