@@ -185,9 +185,8 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  const [navMode, setNavMode] = useState('messages');
-  const [listSearch, setListSearch] = useState('');
   const [inboxTab, setInboxTab] = useState('all');
+  const [listSearch, setListSearch] = useState('');
 
   const [groupModalOpen, setGroupModalOpen] = useState(false);
   const [groupName, setGroupName] = useState('');
@@ -272,9 +271,6 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     [reduceMotion],
   );
 
-  const friendListContainerVariants = convListContainerVariants;
-  const friendListItemVariants = convListItemVariants;
-
   const displayName = user?.displayName || user?.username || user?.name || user?.email || 'Bạn';
   const handle = user?.username || user?.email?.split('@')[0] || 'user';
   const avatarLetter = (displayName || 'U').slice(0, 1).toUpperCase();
@@ -339,7 +335,6 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
   }, []);
 
   const goChatLobbyPreservePath = useCallback(() => {
-    setNavMode('messages');
     if (location.pathname.startsWith('/chat/room')) {
       navigate(ROUTES.CHAT);
     }
@@ -617,11 +612,9 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     async (kind) => {
       const row = shortcutRooms[kind];
       if (row && !row.isPlaceholder) {
-        setNavMode('messages');
         goRoom(row.id);
         return;
       }
-      setNavMode('messages');
       setShortcutBusyKey(kind);
       try {
         const [pubs, levels] = await Promise.all([
@@ -843,7 +836,6 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
       const rid = room?.id ?? room?.Id;
       if (rid != null) {
         closeFriendModal();
-        setNavMode('messages');
         navigate(`/chat/room/${rid}`);
       }
     } catch (err) {
@@ -1009,12 +1001,11 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
   }
 
   function primaryLobbyActive() {
-    return navMode === 'messages' && isChatLobby && (selectedRoomId == null || selectedRoomId === '');
+    return isChatLobby && (selectedRoomId == null || selectedRoomId === '');
   }
 
   function primaryItemActive(row) {
     return (
-      navMode === 'messages' &&
       row &&
       !row.isPlaceholder &&
       selectedRoomId != null &&
@@ -1057,7 +1048,6 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
 
         <div className="moji-chat__sidebar-unified__body-scroll">
           <AnimatePresence mode="wait">
-            {navMode === 'messages' ? (
               <Motion.div
                 key="nav-messages"
                 className="moji-chat__sidebar-unified__pane moji-chat__sidebar-unified__pane--messages"
@@ -1287,97 +1277,19 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
               )}
             </div>
               </Motion.div>
-            ) : (
-              <Motion.div
-                key="nav-contacts"
-                className="moji-chat__sidebar-unified__pane moji-chat__sidebar-unified__pane--contacts"
-                initial={reduceMotion ? false : { opacity: 0, x: -14 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={reduceMotion ? undefined : { opacity: 0, x: -12 }}
-                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-              >
-          <div className="moji-chat__contacts-pane">
-            <div className="moji-chat__list-panel-head moji-chat__list-panel-head--flat">
-              <span className="moji-chat__list-brand">Danh bạ</span>
-              <button type="button" className="moji-chat__list-icon-btn" title="Kết bạn" aria-label="Kết bạn" onClick={openFriendModal}>
-                <IconUserPlus />
-              </button>
-            </div>
-            <div className="moji-chat__contacts-invite-hint">
-              <button
-                type="button"
-                className="moji-chat__contacts-invite-link"
-                onClick={() => {
-                  setNavMode('messages');
-                  setInvitesModalOpen(true);
-                }}
-              >
-                Lời mời kết bạn
-                {incomingRequests.length > 0 ? ` (${incomingRequests.length})` : ''}
-              </button>
-            </div>
-            {friendsLoading ? (
-              <p className="moji-chat__muted">Đang tải bạn bè…</p>
-            ) : friendRows.length === 0 ? (
-              <p className="moji-chat__muted">Chưa có bạn bè. Bấm + để tìm và gửi lời mời.</p>
-            ) : (
-              <Motion.ul
-                className="moji-chat__friend-list"
-                variants={friendListContainerVariants}
-                initial={reduceMotion ? false : 'hidden'}
-                animate={reduceMotion ? false : 'visible'}
-              >
-                {friendRows.map((f, idx) => (
-                  <Motion.li key={`friend-${f.key}-${idx}`} variants={friendListItemVariants}>
-                    <button
-                      type="button"
-                      className="moji-chat__friend-card moji-chat__friend-card--action"
-                      onClick={() => openDirectChat(f.id)}
-                    >
-                      <div className="moji-chat__friend-avatar-wrap">
-                        <span className="moji-chat__friend-avatar">
-                          {String(f.name || '?').slice(0, 1).toUpperCase()}
-                        </span>
-                        {f.online && <span className="moji-chat__online-dot" title="Đang hoạt động" />}
-                      </div>
-                      <div className="moji-chat__friend-body">
-                        <div className="moji-chat__friend-title-row">
-                          <span className="moji-chat__friend-name">{f.name}</span>
-                          <span className="moji-chat__friend-time">{f.timeLabel}</span>
-                        </div>
-                        <div className="moji-chat__friend-snippet">{f.snippet}</div>
-                      </div>
-                    </button>
-                  </Motion.li>
-                ))}
-              </Motion.ul>
-            )}
-          </div>
-              </Motion.div>
-            )}
           </AnimatePresence>
         </div>
 
         <div className="moji-chat__primary-foot">
           <button
             type="button"
-            className={`moji-chat__primary-foot-btn ${navMode === 'messages' ? 'moji-chat__primary-foot-btn--active' : ''}`}
+            className="moji-chat__primary-foot-btn moji-chat__primary-foot-btn--active"
             onClick={goChatLobbyPreservePath}
           >
             <span className="moji-chat__primary-foot-ico" aria-hidden>
               💬
             </span>
             <span>Tin nhắn</span>
-          </button>
-          <button
-            type="button"
-            className={`moji-chat__primary-foot-btn ${navMode === 'contacts' ? 'moji-chat__primary-foot-btn--active' : ''}`}
-            onClick={() => setNavMode('contacts')}
-          >
-            <span className="moji-chat__primary-foot-ico" aria-hidden>
-              👥
-            </span>
-            <span>Bạn bè</span>
           </button>
           <button
             type="button"
@@ -1418,7 +1330,6 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                   role="menuitem"
                   onClick={() => {
                     setUserMenuOpen(false);
-                    setNavMode('messages');
                     setInvitesModalOpen(true);
                   }}
                 >
