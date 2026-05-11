@@ -10,6 +10,7 @@ using backend.Models.User;
 using backend.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
+using backend.Authorization;
 
 namespace backend.Services.Chat;
 
@@ -121,28 +122,32 @@ public class ChatService : IChatService
             query = query.Where(r => r.CreatedBy == currentUserId);
         }
 
-        // Nếu frontend không truyền levelId, tự suy ra từ user
-        if (!levelId.HasValue)
-        {
-            var me = await _db.Users.FirstOrDefaultAsync(u => u.Id == currentUserId && u.DeletedAt == null);
-            if (me?.LevelId != null)
-                levelId = me.LevelId;
-        }
+        var me = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == currentUserId && u.DeletedAt == null);
+        var bypassJlptGate =
+            me != null &&
+            (string.Equals(me.Role, AppRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(me.Role, AppRoles.Moderator, StringComparison.OrdinalIgnoreCase));
 
-        // Nếu đã biết levelId:
-        // - Phòng chung (public, slug = 'common' hoặc levelId null)
-        // - Phòng theo level (type = 'level', levelId khớp user)
-        if (levelId.HasValue)
+        // Nếu frontend không truyền levelId, tự suy ra từ user (admin/mod vẫn có level nhưng không dùng để khóa danh sách)
+        if (!levelId.HasValue && me?.LevelId != null)
+            levelId = me.LevelId;
+
+        var isGroupRequest = string.Equals(type, GroupRoomType, StringComparison.OrdinalIgnoreCase);
+
+        // Học viên: chỉ Phòng chung + phòng đúng JLPT. Admin/Moderator: xem mọi phòng public/level (theo tham số type), không khóa JLPT.
+        if (!isGroupRequest && !bypassJlptGate)
         {
-            var lvl = levelId.Value;
-            query = query.Where(r =>
-                (r.Type == "public" && (r.Slug == "common" || r.LevelId == null)) ||
-                (r.Type == "level" && r.LevelId == lvl));
-        }
-        else
-        {
-            // Chưa có level (chưa làm placement test): chỉ cho xem Phòng chung.
-            query = query.Where(r => r.Type == "public" && (r.Slug == "common" || r.LevelId == null));
+            if (levelId.HasValue)
+            {
+                var lvl = levelId.Value;
+                query = query.Where(r =>
+                    (r.Type == "public" && (r.Slug == "common" || r.LevelId == null)) ||
+                    (r.Type == "level" && r.LevelId == lvl));
+            }
+            else
+            {
+                query = query.Where(r => r.Type == "public" && (r.Slug == "common" || r.LevelId == null));
+            }
         }
 
         var rooms = await query

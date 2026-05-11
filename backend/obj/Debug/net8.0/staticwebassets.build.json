@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "wpdMax6+sepCcfqsMN5MTYf9WJ42VAXlRcpklK1PBJs=",
+  "Hash": "sKWmXCTOCMDChFYdF87NDDK0Lc88Z7a9EVYiwZtZKsQ=",
   "Source": "backend",
   "BasePath": "_content/backend",
   "Mode": "Default",
@@ -53,6 +53,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\uploads\\17342f9102234c51aae2dbdd2d56b04c.png"
+    },
+    {
+      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\1b10874230414ebe8c841754b295307e.jpg",
+      "SourceId": "backend",
+      "SourceType": "Discovered",
+      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "BasePath": "_content/backend",
+      "RelativePath": "uploads/1b10874230414ebe8c841754b295307e.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\1b10874230414ebe8c841754b295307e.jpg"
     },
     {
       "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\2152197aaa814610956875cd86a631db.png",
@@ -129,6 +148,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\uploads\\77357eb4479a4f7ea2b1f87198bc8ef4.pptx"
+    },
+    {
+      "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\7c42f2d691c34c11b132e0c16288b3ca.jpg",
+      "SourceId": "backend",
+      "SourceType": "Discovered",
+      "ContentRoot": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\",
+      "BasePath": "_content/backend",
+      "RelativePath": "uploads/7c42f2d691c34c11b132e0c16288b3ca.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\7c42f2d691c34c11b132e0c16288b3ca.jpg"
     },
     {
       "Identity": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\wwwroot\\uploads\\84901ec9b32e4231beb44f10e4acebfb.png",

@@ -215,6 +215,8 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
   const [groupMemberIds, setGroupMemberIds] = useState([]);
   const [sidebarRoomMenuId, setSidebarRoomMenuId] = useState(null);
   const [sidebarBusyRoomId, setSidebarBusyRoomId] = useState(null);
+  /** 'general' | 'n5' | 'n4' | 'n3' — đang resolve phòng từ API khi chưa có trong inbox */
+  const [shortcutBusyKey, setShortcutBusyKey] = useState(null);
   const sidebarListRef = useRef(null);
   const prevSelectedRoomIdRef = useRef(null);
   const reduceMotion = useReducedMotion();
@@ -335,6 +337,13 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
       setOutgoingRequests([]);
     }
   }, []);
+
+  const goChatLobbyPreservePath = useCallback(() => {
+    setNavMode('messages');
+    if (location.pathname.startsWith('/chat/room')) {
+      navigate(ROUTES.CHAT);
+    }
+  }, [location.pathname, navigate]);
 
   useEffect(() => {
     loadRooms();
@@ -536,25 +545,28 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
   }, [outgoingRequests]);
 
   const friendRows = useMemo(() => {
-    return friends.map((row) => {
-      const f = row.friend ?? row.Friend;
-      const uid = f?.id ?? f?.Id;
-      const friendshipId = row.friendshipId ?? row.FriendshipId ?? uid;
-      const uname = f?.username ?? f?.Username ?? '';
-      const dname = f?.displayName ?? f?.DisplayName ?? uname;
-      const uidNum = Number(uid) || 0;
-      const online = uidNum ? Boolean(effectiveFriendOnlineByUserId.get(uidNum)) : isPresenceOnline(row);
-      const lastSeen = row.lastSeenAt ?? row.LastSeenAt;
-      return {
-        key: friendshipId,
-        id: uid,
-        name: dname || uname || `User ${uid}`,
-        username: uname,
-        online,
-        timeLabel: online ? 'online' : formatRelativeShort(lastSeen),
-        snippet: online ? 'Đang hoạt động' : 'Offline',
-      };
-    });
+    return friends
+      .map((row) => {
+        const f = row.friend ?? row.Friend;
+        if (f == null) return null;
+        const uid = f?.id ?? f?.Id;
+        const friendshipId = row.friendshipId ?? row.FriendshipId ?? uid;
+        const uname = f?.username ?? f?.Username ?? '';
+        const dname = f?.displayName ?? f?.DisplayName ?? uname;
+        const uidNum = Number(uid) || 0;
+        const online = uidNum ? Boolean(effectiveFriendOnlineByUserId.get(uidNum)) : isPresenceOnline(row);
+        const lastSeen = row.lastSeenAt ?? row.LastSeenAt;
+        return {
+          key: String(friendshipId ?? uid ?? ''),
+          id: uid,
+          name: dname || uname || (uid != null ? `User ${uid}` : 'Bạn bè'),
+          username: uname,
+          online,
+          timeLabel: online ? 'online' : formatRelativeShort(lastSeen),
+          snippet: online ? 'Đang hoạt động' : 'Offline',
+        };
+      })
+      .filter(Boolean);
   }, [friends, effectiveFriendOnlineByUserId]);
 
   /** Phím tắt phòng kiểu mock Sakura (cột điều hướng trái). */
@@ -601,14 +613,61 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
     navigate(`/chat/room/${roomId}`);
   }
 
-  function goPrimaryShortcut(row) {
-    setNavMode('messages');
-    if (row && !row.isPlaceholder) {
-      goRoom(row.id);
-      return;
-    }
-    navigate(ROUTES.CHAT);
-  }
+  const goShortcutKind = useCallback(
+    async (kind) => {
+      const row = shortcutRooms[kind];
+      if (row && !row.isPlaceholder) {
+        setNavMode('messages');
+        goRoom(row.id);
+        return;
+      }
+      setNavMode('messages');
+      setShortcutBusyKey(kind);
+      try {
+        const [pubs, levels] = await Promise.all([
+          chatService.getPublicRooms({ type: 'public', limit: 80 }),
+          chatService.getPublicRooms({ type: 'level', limit: 80 }),
+        ]);
+        const all = [...safeArray(pubs), ...safeArray(levels)];
+        const slugMap = {
+          general: ['common', 'general'],
+          n5: ['level-n5'],
+          n4: ['level-n4'],
+          n3: ['level-n3'],
+        };
+        const wantSlugs = slugMap[kind];
+        let found =
+          wantSlugs &&
+          all.find((r) => {
+            const slug = String(r.slug ?? r.Slug ?? '').toLowerCase();
+            return wantSlugs.some((s) => slug === s);
+          });
+        if (!found && kind === 'general') {
+          found = all.find((r) =>
+            /phòng\s*chung|^\s*chung\s*$|cộng\s*đồng/i.test(String(r.name ?? r.Name ?? ''))
+          );
+        }
+        if (!found && (kind === 'n5' || kind === 'n4' || kind === 'n3')) {
+          const re = new RegExp(`\\b${kind}\\b`, 'i');
+          found = all.find((r) => re.test(String(r.name ?? r.Name ?? '')));
+        }
+        const id = found?.id ?? found?.Id;
+        if (id != null) {
+          await chatService.joinRoom(id);
+          notifyChatInboxRevised();
+          await loadRooms();
+          navigate(`/chat/room/${id}`);
+          return;
+        }
+      } catch {
+        /* noop */
+      } finally {
+        setShortcutBusyKey(null);
+      }
+      navigate(ROUTES.CHAT);
+    },
+    [shortcutRooms, navigate, loadRooms]
+  );
 
   function handleCreateChat() {
     navigate(ROUTES.CHAT);
@@ -848,7 +907,8 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
   }
 
   function renderConvListItems(rows, { showMenu = false } = {}) {
-    return rows.map((g) => {
+    const clean = (rows || []).filter((g) => g != null && g.id != null && !g.isPlaceholder);
+    return clean.map((g) => {
       const active = selectedRoomId != null && String(selectedRoomId) === String(g.id);
       const useMenu = showMenu && !g.isPlaceholder;
       const busy = sidebarBusyRoomId != null && String(sidebarBusyRoomId) === String(g.id);
@@ -994,97 +1054,103 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
           </div>
         </div>
         </div>
-        <div className="moji-chat__sidebar-unified__shortcuts-stack">
-        <div className="moji-chat__primary-scroll moji-chat__primary-scroll--unified">
-          <ul className="moji-chat__primary-list">
-            <li>
-              <button
-                type="button"
-                className={`moji-chat__primary-item ${primaryLobbyActive() ? 'moji-chat__primary-item--active' : ''}`}
-                onClick={() => {
-                  setNavMode('messages');
-                  navigate(ROUTES.CHAT);
-                }}
-              >
-                <span className="moji-chat__primary-item-ico" aria-hidden>
-                  ◎
-                </span>
-                <span className="moji-chat__primary-item-label">Sảnh chat</span>
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                className={`moji-chat__primary-item ${primaryItemActive(shortcutRooms.n5) ? 'moji-chat__primary-item--active' : ''}`}
-                onClick={() => goPrimaryShortcut(shortcutRooms.n5)}
-              >
-                <span className="moji-chat__primary-lvl" aria-hidden>
-                  N5
-                </span>
-                <span className="moji-chat__primary-item-label">Phòng N5</span>
-                {primaryUnreadPill(shortcutRooms.n5)}
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                className={`moji-chat__primary-item ${primaryItemActive(shortcutRooms.n4) ? 'moji-chat__primary-item--active' : ''}`}
-                onClick={() => goPrimaryShortcut(shortcutRooms.n4)}
-              >
-                <span className="moji-chat__primary-lvl" aria-hidden>
-                  N4
-                </span>
-                <span className="moji-chat__primary-item-label">Phòng N4</span>
-                {primaryUnreadPill(shortcutRooms.n4)}
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                className={`moji-chat__primary-item ${primaryItemActive(shortcutRooms.n3) ? 'moji-chat__primary-item--active' : ''}`}
-                onClick={() => goPrimaryShortcut(shortcutRooms.n3)}
-              >
-                <span className="moji-chat__primary-lvl" aria-hidden>
-                  N3
-                </span>
-                <span className="moji-chat__primary-item-label">Phòng N3</span>
-                {primaryUnreadPill(shortcutRooms.n3)}
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                className={`moji-chat__primary-item ${primaryItemActive(shortcutRooms.general) ? 'moji-chat__primary-item--active' : ''}`}
-                onClick={() => goPrimaryShortcut(shortcutRooms.general)}
-              >
-                <span className="moji-chat__primary-item-ico" aria-hidden>
-                  💬
-                </span>
-                <span className="moji-chat__primary-item-label">Phòng chung</span>
-                {primaryUnreadPill(shortcutRooms.general)}
-              </button>
-            </li>
-          </ul>
-        </div>
-        <div className="moji-chat__primary-cta-block moji-chat__primary-cta-block--compact">
-          <button type="button" className="moji-chat__primary-new-link" onClick={handleCreateChat}>
-            + Tin nhắn mới
-          </button>
-        </div>
-        </div>
 
-        <div className="moji-chat__sidebar-unified__grow">
+        <div className="moji-chat__sidebar-unified__body-scroll">
           <AnimatePresence mode="wait">
             {navMode === 'messages' ? (
               <Motion.div
                 key="nav-messages"
-                className="moji-chat__sidebar-unified__grow-motion"
+                className="moji-chat__sidebar-unified__pane moji-chat__sidebar-unified__pane--messages"
                 initial={reduceMotion ? false : { opacity: 0, x: -14 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={reduceMotion ? undefined : { opacity: 0, x: -12 }}
                 transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
               >
-            <h2 className="moji-chat__panel2-title moji-chat__panel2-title--unified">Tin nhắn</h2>
+                <div className="moji-chat__sidebar-unified__shortcuts-stack">
+                  <div className="moji-chat__primary-scroll moji-chat__primary-scroll--unified">
+                    <ul className="moji-chat__primary-list">
+                      <li>
+                        <button
+                          type="button"
+                          className={`moji-chat__primary-item ${primaryLobbyActive() ? 'moji-chat__primary-item--active' : ''}`}
+                          onClick={goChatLobbyPreservePath}
+                        >
+                          <span className="moji-chat__primary-item-ico" aria-hidden>
+                            ◎
+                          </span>
+                          <span className="moji-chat__primary-item-label">Sảnh chat</span>
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          type="button"
+                          className={`moji-chat__primary-item ${primaryItemActive(shortcutRooms.n5) ? 'moji-chat__primary-item--active' : ''}`}
+                          onClick={() => goShortcutKind('n5')}
+                          disabled={shortcutBusyKey != null}
+                          aria-busy={shortcutBusyKey === 'n5'}
+                        >
+                          <span className="moji-chat__primary-lvl" aria-hidden>
+                            N5
+                          </span>
+                          <span className="moji-chat__primary-item-label">Phòng N5</span>
+                          {primaryUnreadPill(shortcutRooms.n5)}
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          type="button"
+                          className={`moji-chat__primary-item ${primaryItemActive(shortcutRooms.n4) ? 'moji-chat__primary-item--active' : ''}`}
+                          onClick={() => goShortcutKind('n4')}
+                          disabled={shortcutBusyKey != null}
+                          aria-busy={shortcutBusyKey === 'n4'}
+                        >
+                          <span className="moji-chat__primary-lvl" aria-hidden>
+                            N4
+                          </span>
+                          <span className="moji-chat__primary-item-label">Phòng N4</span>
+                          {primaryUnreadPill(shortcutRooms.n4)}
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          type="button"
+                          className={`moji-chat__primary-item ${primaryItemActive(shortcutRooms.n3) ? 'moji-chat__primary-item--active' : ''}`}
+                          onClick={() => goShortcutKind('n3')}
+                          disabled={shortcutBusyKey != null}
+                          aria-busy={shortcutBusyKey === 'n3'}
+                        >
+                          <span className="moji-chat__primary-lvl" aria-hidden>
+                            N3
+                          </span>
+                          <span className="moji-chat__primary-item-label">Phòng N3</span>
+                          {primaryUnreadPill(shortcutRooms.n3)}
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          type="button"
+                          className={`moji-chat__primary-item ${primaryItemActive(shortcutRooms.general) ? 'moji-chat__primary-item--active' : ''}`}
+                          onClick={() => goShortcutKind('general')}
+                          disabled={shortcutBusyKey != null}
+                          aria-busy={shortcutBusyKey === 'general'}
+                        >
+                          <span className="moji-chat__primary-item-ico" aria-hidden>
+                            💬
+                          </span>
+                          <span className="moji-chat__primary-item-label">Phòng chung</span>
+                          {primaryUnreadPill(shortcutRooms.general)}
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="moji-chat__primary-cta-block moji-chat__primary-cta-block--compact">
+                    <button type="button" className="moji-chat__primary-new-link" onClick={handleCreateChat}>
+                      + Tin nhắn mới
+                    </button>
+                  </div>
+                </div>
+
+                <h2 className="moji-chat__panel2-title moji-chat__panel2-title--unified">Tin nhắn</h2>
             {sidebarNotice ? (
               <div className="moji-chat__sidebar-notice moji-chat__sidebar-notice--unified" role="status">
                 {sidebarNotice}
@@ -1125,7 +1191,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                 Chưa đọc
               </button>
             </div>
-            <div ref={sidebarListRef} className="moji-chat__list-scroll moji-chat__list-scroll--sections">
+            <div ref={sidebarListRef} className="moji-chat__list-scroll moji-chat__list-scroll--sections moji-chat__list-scroll--unified-natural">
               {roomsLoading ? (
                 <ul className="moji-chat__sidebar-skeleton" aria-hidden>
                   {[1, 2, 3, 4].map((k) => (
@@ -1224,13 +1290,13 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
             ) : (
               <Motion.div
                 key="nav-contacts"
-                className="moji-chat__sidebar-unified__grow-motion"
+                className="moji-chat__sidebar-unified__pane moji-chat__sidebar-unified__pane--contacts"
                 initial={reduceMotion ? false : { opacity: 0, x: -14 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={reduceMotion ? undefined : { opacity: 0, x: -12 }}
                 transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
               >
-          <div className="moji-chat__list-scroll moji-chat__list-scroll--contacts">
+          <div className="moji-chat__contacts-pane">
             <div className="moji-chat__list-panel-head moji-chat__list-panel-head--flat">
               <span className="moji-chat__list-brand">Danh bạ</span>
               <button type="button" className="moji-chat__list-icon-btn" title="Kết bạn" aria-label="Kết bạn" onClick={openFriendModal}>
@@ -1261,15 +1327,17 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
                 initial={reduceMotion ? false : 'hidden'}
                 animate={reduceMotion ? false : 'visible'}
               >
-                {friendRows.map((f) => (
-                  <Motion.li key={f.key} variants={friendListItemVariants}>
+                {friendRows.map((f, idx) => (
+                  <Motion.li key={`friend-${f.key}-${idx}`} variants={friendListItemVariants}>
                     <button
                       type="button"
                       className="moji-chat__friend-card moji-chat__friend-card--action"
                       onClick={() => openDirectChat(f.id)}
                     >
                       <div className="moji-chat__friend-avatar-wrap">
-                        <span className="moji-chat__friend-avatar">{f.name.slice(0, 1).toUpperCase()}</span>
+                        <span className="moji-chat__friend-avatar">
+                          {String(f.name || '?').slice(0, 1).toUpperCase()}
+                        </span>
                         {f.online && <span className="moji-chat__online-dot" title="Đang hoạt động" />}
                       </div>
                       <div className="moji-chat__friend-body">
@@ -1294,10 +1362,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
           <button
             type="button"
             className={`moji-chat__primary-foot-btn ${navMode === 'messages' ? 'moji-chat__primary-foot-btn--active' : ''}`}
-            onClick={() => {
-              setNavMode('messages');
-              navigate(ROUTES.CHAT);
-            }}
+            onClick={goChatLobbyPreservePath}
           >
             <span className="moji-chat__primary-foot-ico" aria-hidden>
               💬
@@ -1511,15 +1576,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
               </div>
             </Motion.div>
             <Motion.div className="moji-chat__path-milestones" variants={pathAsideCardVariants} aria-label="Mốc minh họa">
-              <span className="moji-chat__path-milestone moji-chat__path-milestone--on" title="Đang học">
-                🔥
-              </span>
-              <span className="moji-chat__path-milestone moji-chat__path-milestone--on" title="Phòng đã tham gia">
-                🎓
-              </span>
-              <span className="moji-chat__path-milestone" title="Mở khóa sau">
-                🔒
-              </span>
+              
             </Motion.div>
           </Motion.div>
         </aside>
