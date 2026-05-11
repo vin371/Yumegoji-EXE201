@@ -70,7 +70,7 @@ export default function PlayPvpLobby() {
         <h2>Tạo phòng</h2>
         <label className="play-pvp__field">
           <span>Slug game</span>
-          <input value={gameSlug} onChange={(e) => setGameSlug(e.target.value)} placeholder="flashcard-battle" />
+          <input value={gameSlug} onChange={(e) => setGameSlug(e.target.value)} placeholder="vd: flashcard-battle" />
         </label>
         <button type="button" className="play-btn play-btn--primary" disabled={busy} onClick={onCreate}>
           Tạo mã phòng

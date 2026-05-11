@@ -195,7 +195,7 @@ export function LearnSidebarShell({
       <div className="learn-shell-stack">
         <ShellCard variant="user">
           <Link className="learn-sidebar__back" to={ROUTES.DASHBOARD}>
-            ← Về Dashboard
+            ← Về bảng điều khiển
           </Link>
           <div className="learn-shell-user">
             <div className="learn-shell-user__name">{displayName}</div>

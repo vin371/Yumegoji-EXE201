@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
 import { ROUTES } from '../../data/routes';
 import { extractLearnDocument, postLearnAiChat } from '../../services/learnAiService';
+import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
 
 const Motion = motion;
 
@@ -144,12 +145,7 @@ export default function LearnAiWidget({ isAuthenticated }) {
               if (warn) t += `\n\n---\n(${warn})`;
               setTextSnippets((s) => [...s, { id: `${Date.now()}-${f.name}`, name: f.name, text: t }]);
             } catch (ex) {
-              const msg =
-                ex?.response?.data?.message ||
-                ex?.response?.data?.Message ||
-                ex?.message ||
-                'Không tải được tài liệu.';
-              setErr(String(msg));
+              setErr(getErrorMessageForUser(ex, 'Không tải được tài liệu.'));
             } finally {
               setDocBusy(false);
             }
@@ -219,13 +215,11 @@ export default function LearnAiWidget({ isAuthenticated }) {
       const reply = data?.message ?? data?.Message ?? '';
       setMessages((m) => [...m, { id: `a-${Date.now()}`, role: 'assistant', content: reply }]);
     } catch (ex) {
-      const msg =
-        ex?.response?.data?.message ||
-        ex?.message ||
-        (ex?.response?.status === 503
+      const fallback =
+        ex?.response?.status === 503
           ? 'Ollama chưa chạy hoặc model chưa tải. Kiểm tra máy chủ backend và `ollama serve`.'
-          : 'Không gửi được tin nhắn.');
-      setErr(String(msg));
+          : 'Không gửi được tin nhắn.';
+      setErr(getErrorMessageForUser(ex, fallback));
       setMessages((m) => m.slice(0, -1));
     } finally {
       setBusy(false);

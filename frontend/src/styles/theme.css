@@ -42,6 +42,13 @@
   overflow: hidden;
 }
 
+/* /chat: Suspense không bọc DOM — con trực tiếp của .app-main-motion phải giãn theo chiều cao viewport. */
+.app-main--chat .app-main-motion > * {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
 /* Biến theme (có thể gộp vào index.css) */
 :root {
   /* Japanese red palette */

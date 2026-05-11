@@ -9,6 +9,7 @@ import { getPostLoginRoute } from '../../utils/postLoginRoute';
 import { isStaffUser } from '../../utils/roles';
 import { useGoogleIdentityButton } from '../../hooks/useGoogleIdentityButton';
 import { isRequired, isEmail, minLength } from '../../utils/validators';
+import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
 import { AuthSakuraLayer } from '../../components/auth/AuthSakuraLayer';
 import { AuthHeroAvatars } from '../../components/auth/AuthHeroAvatars';
 import {
@@ -76,7 +77,7 @@ export default function Register() {
         const data = await loginWithGoogle({ idToken: credential });
         routeAfterAuth(data);
       } catch (err) {
-        setError(err.response?.data?.message || err.message || 'Đăng ký/đăng nhập Google thất bại.');
+        setError(getErrorMessageForUser(err, 'Đăng ký/đăng nhập Google thất bại.'));
       } finally {
         setLoading(false);
       }
@@ -159,7 +160,7 @@ export default function Register() {
       setError('');
       navigate(ROUTES.LOGIN, { replace: true, state: { message: 'Đăng ký thành công. Vui lòng đăng nhập.' } });
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Đăng ký thất bại.');
+      setError(getErrorMessageForUser(err, 'Đăng ký thất bại.'));
     } finally {
       setLoading(false);
     }
@@ -178,15 +179,15 @@ export default function Register() {
         <section className="auth-left auth-left--register">
           <Motion.div className="auth-left__hero-copy" variants={loginHeroGlass} initial="hidden" animate="visible">
             <h2 className="auth-left__title">
-              Start Your Japanese <span className="auth-left__accent">Journey.</span>
+              Bắt đầu hành trình <span className="auth-left__accent">tiếng Nhật.</span>
             </h2>
             <p className="auth-left__desc">
-              Master Kanji, Hiragana, and Katakana with our interactive community-driven platform.
+              Luyện Kanji, Hiragana và Katakana trên nền tảng cộng đồng tương tác.
             </p>
             <div className="auth-left__hero-footer" aria-hidden="true">
               <AuthHeroAvatars />
               <div>
-                Joined by <strong>12,000+</strong> learners
+                Đã có hơn <strong>12.000</strong> học viên đồng hành
               </div>
             </div>
           </Motion.div>
@@ -199,10 +200,10 @@ export default function Register() {
           </Motion.div>
 
           <Motion.h1 className="auth-right__title" variants={loginStaggerItem}>
-            Create Account
+            Tạo tài khoản
           </Motion.h1>
           <Motion.p className="auth-right__subtitle" variants={loginStaggerItem}>
-            Join the YumeGo-ji community today.
+            Tham gia cộng đồng YumeGo-ji ngay hôm nay.
           </Motion.p>
 
           <Motion.div className="auth-social auth-social--v3 auth-social--register" variants={loginStaggerItem}>
@@ -240,7 +241,7 @@ export default function Register() {
           </Motion.div>
 
           <Motion.div className="auth-divider" variants={loginStaggerItem}>
-            OR CONTINUE WITH EMAIL
+            HOẶC TIẾP TỤC BẰNG EMAIL
           </Motion.div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
@@ -257,7 +258,7 @@ export default function Register() {
                 transition={{ type: 'spring', stiffness: 420, damping: 28 }}
               >
                 <label htmlFor="register-fullName" className="input-label">
-                  Full Name
+                  Họ và tên
                 </label>
                 <input
                   id="register-fullName"
@@ -265,7 +266,7 @@ export default function Register() {
                   className="auth-field-input auth-field-input--plain"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Arata Tanaka"
+                  placeholder="Nguyễn Văn A"
                   autoComplete="name"
                   disabled={loading}
                 />
@@ -278,7 +279,7 @@ export default function Register() {
                 transition={{ type: 'spring', stiffness: 420, damping: 28 }}
               >
                 <label htmlFor="register-email" className="input-label">
-                  Email Address
+                  Email
                 </label>
                 <input
                   id="register-email"
@@ -286,7 +287,7 @@ export default function Register() {
                   className="auth-field-input auth-field-input--plain"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
+                  placeholder="ban@email.com"
                   autoComplete="email"
                   disabled={loading}
                 />
@@ -299,7 +300,7 @@ export default function Register() {
                   transition={{ type: 'spring', stiffness: 420, damping: 28 }}
                 >
                   <label htmlFor="register-password" className="input-label">
-                    Password
+                    Mật khẩu
                   </label>
                   <input
                     id="register-password"
@@ -319,7 +320,7 @@ export default function Register() {
                   transition={{ type: 'spring', stiffness: 420, damping: 28 }}
                 >
                   <label htmlFor="register-confirmPassword" className="input-label">
-                    Confirm Password
+                    Xác nhận mật khẩu
                   </label>
                   <input
                     id="register-confirmPassword"
@@ -348,14 +349,14 @@ export default function Register() {
                   whileHover={{ scale: loading ? 1 : 1.02 }}
                   whileTap={{ scale: loading ? 1 : 0.98 }}
                 >
-                  {loading ? 'Đang xử lý...' : 'Join Now'}
+                  {loading ? 'Đang xử lý...' : 'Đăng ký'}
                 </Motion.button>
               </Motion.div>
             </Motion.div>
           </form>
 
           <Motion.p className="auth-footer" variants={loginStaggerItem}>
-            Already have an account? <Link to={ROUTES.LOGIN}>Log In</Link>
+            Đã có tài khoản? <Link to={ROUTES.LOGIN}>Đăng nhập</Link>
           </Motion.p>
           <Motion.div variants={loginStaggerItem}>
             <Link to={ROUTES.HOME} className="auth-back">

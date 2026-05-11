@@ -1006,6 +1006,7 @@ html[data-theme='dark'] .moji-chat--path .moji-chat__list-panel {
   --moji-panel: #ffffff;
   --moji-sakura-soft: #fff5f8;
   --moji-sakura-line: rgba(179, 27, 59, 0.2);
+  align-items: stretch;
 }
 
 html[data-theme='dark'] .moji-chat--sakura-3col {
@@ -1024,12 +1025,15 @@ html[data-theme='dark'] .moji-chat--sakura-3col .moji-chat__main {
 }
 
 .moji-chat__sidebar-unified {
-  width: min(360px, 100%);
+  width: min(300px, 100%);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
   padding: 0;
   gap: 0;
   background: linear-gradient(180deg, #1e2230 0%, #161a24 100%);
@@ -1037,9 +1041,36 @@ html[data-theme='dark'] .moji-chat--sakura-3col .moji-chat__main {
   color: #e5e7eb;
 }
 
+html[data-theme='light'] .moji-chat__sidebar-unified {
+  background: linear-gradient(185deg, #ffffff 0%, #fff8fb 42%, #f3f4f6 100%);
+  border-right: 1px solid rgba(15, 23, 42, 0.1);
+  color: #0f172a;
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.06);
+}
+
 html[data-theme='dark'] .moji-chat__sidebar-unified {
   background: linear-gradient(180deg, #0c0e14 0%, #12151f 100%);
   border-right-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+/* Phím tắt phòng + CTA: một vùng cuộn — tránh hai khối chồng/lấn */
+.moji-chat__sidebar-unified__shortcuts-stack {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(280px, 36vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+html[data-theme='light'] .moji-chat__sidebar-unified__shortcuts-stack {
+  border-bottom-color: rgba(15, 23, 42, 0.08);
 }
 
 .moji-chat__sidebar-unified__top {
@@ -1063,11 +1094,67 @@ html[data-theme='dark'] .moji-chat__sidebar-unified {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
-.moji-chat__sidebar-unified .moji-chat__primary-scroll--unified {
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__path-brand-title {
+  color: #b31b3b;
+}
+
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__path-brand-sub {
+  color: rgba(15, 23, 42, 0.48);
+}
+
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__primary-brand-head--path {
+  border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__primary-item {
+  color: #334155;
+}
+
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__primary-item:hover {
+  background: rgba(225, 29, 72, 0.08);
+}
+
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__list-search {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(15, 23, 42, 0.12);
+  color: #0f172a;
+}
+
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__list-search::placeholder {
+  color: rgba(15, 23, 42, 0.45);
+}
+
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__conv-name,
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__conv-snippet {
+  color: #1e293b;
+}
+
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__conv-row:hover {
+  background: rgba(225, 29, 72, 0.06);
+}
+
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__primary-foot-btn {
+  color: #475569;
+}
+
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__primary-foot-link {
+  color: rgba(15, 23, 42, 0.5);
+}
+
+.moji-chat__sidebar-unified__shortcuts-stack .moji-chat__primary-scroll--unified {
   flex: 0 1 auto;
-  max-height: min(240px, 38vh);
+  max-height: none;
   min-height: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: none;
+}
+
+.moji-chat__sidebar-unified__shortcuts-stack .moji-chat__primary-cta-block--compact {
+  flex-shrink: 0;
+}
+
+.moji-chat__sidebar-unified .moji-chat__primary-scroll--unified {
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
 .moji-chat__sidebar-unified .moji-chat__primary-item {
@@ -1098,18 +1185,31 @@ html[data-theme='dark'] .moji-chat__sidebar-unified {
 }
 
 .moji-chat__sidebar-unified__grow {
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   min-height: 0;
+  position: relative;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.12);
 }
 
+html[data-theme='light'] .moji-chat__sidebar-unified__grow {
+  background: rgba(248, 250, 252, 0.85);
+}
+
 .moji-chat__sidebar-unified .moji-chat__panel2-title,
 .moji-chat__sidebar-unified .moji-chat__panel2-title--unified {
   color: #f8fafc;
-  padding-top: 0.35rem;
+  padding: 0.55rem 1rem 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__panel2-title,
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__panel2-title--unified {
+  color: #0f172a;
 }
 
 .moji-chat__sidebar-unified .moji-chat__sidebar-notice,
@@ -1192,8 +1292,15 @@ html[data-theme='dark'] .moji-chat__sidebar-unified {
 }
 
 .moji-chat__sidebar-unified .moji-chat__primary-foot {
+  margin-top: 0;
+  flex-shrink: 0;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.15);
+}
+
+html[data-theme='light'] .moji-chat__sidebar-unified .moji-chat__primary-foot {
+  border-top-color: rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .moji-chat__sidebar-unified .moji-chat__primary-foot-btn {
@@ -2973,11 +3080,13 @@ html[data-theme='dark'] .moji-chat__main-sakura--mid {
 }
 
 .moji-chat__sidebar-unified__grow-motion {
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+  width: 100%;
 }
 
 .moji-chat__path-aside-motion {
@@ -5988,9 +6097,18 @@ html[data-theme='dark'] .moji-chat__banner-error {
     overflow-y: auto;
   }
 
-  .moji-chat__sidebar-unified .moji-chat__primary-scroll--unified {
-    max-height: 104px;
+  .moji-chat__sidebar-unified__shortcuts-stack {
     flex: 1 1 100%;
+    width: 100%;
+    max-height: min(140px, 28vh);
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .moji-chat__sidebar-unified__shortcuts-stack .moji-chat__primary-scroll--unified {
+    max-height: none;
+    flex: 0 0 auto;
   }
 
   .moji-chat__primary-brand-head {

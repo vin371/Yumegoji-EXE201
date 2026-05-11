@@ -12,7 +12,7 @@ export function LevelUpExamBar({ testTitle, minutes, seconds, urgent, onHelpClic
   return (
     <div className="level-up-exam-bar">
       <div className="level-up-exam-bar__left">
-        <Link to={ROUTES.DASHBOARD} className="level-up-exam-bar__brand" title="Về Dashboard">
+        <Link to={ROUTES.DASHBOARD} className="level-up-exam-bar__brand" title="Về bảng điều khiển">
           <img src={yumeLogo} alt="" width={40} height={40} className="level-up-exam-bar__logo" />
           <span className="level-up-exam-bar__name">YumeGo-ji</span>
         </Link>

@@ -5,6 +5,7 @@ import { ROUTES } from '../../data/routes';
 import { useAuth } from '../../hooks/useAuth';
 import { paymentService } from '../../services/paymentService';
 import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
+import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
 
 /** Alias để ESLint nhận diện biến dùng qua JSX. */
 const Motion = motion;
@@ -93,7 +94,7 @@ export default function UpgradePage() {
           setIntent(latest);
         }
       } catch (e) {
-        if (!cancelled) setErr(e?.response?.data?.message || e?.message || 'Không tải được dữ liệu Upgrade.');
+        if (!cancelled) setErr(getErrorMessageForUser(e, 'Không tải được dữ liệu nâng cấp.'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -128,7 +129,7 @@ export default function UpgradePage() {
       setIntent(dto);
       setMsg('Đã tạo mã QR thanh toán.');
     } catch (e) {
-      setErr(e?.response?.data?.message || e?.message || 'Không tạo được mã thanh toán.');
+      setErr(getErrorMessageForUser(e, 'Không tạo được mã thanh toán.'));
     } finally {
       setCreating(false);
     }
@@ -144,7 +145,7 @@ export default function UpgradePage() {
       setIntent(dto);
       setMsg('Đã gửi xác nhận. Vui lòng chờ admin duyệt.');
     } catch (e) {
-      setErr(e?.response?.data?.message || e?.message || 'Không xác nhận được thanh toán.');
+      setErr(getErrorMessageForUser(e, 'Không xác nhận được thanh toán.'));
     } finally {
       setConfirming(false);
     }
@@ -300,7 +301,7 @@ export default function UpgradePage() {
               </button>
             </Motion.div>
             <Link className="upgrade-page__back" to={ROUTES.DASHBOARD}>
-              ← Về Dashboard
+              ← Về bảng điều khiển
             </Link>
           </div>
         </section>

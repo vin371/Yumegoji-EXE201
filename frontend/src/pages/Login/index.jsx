@@ -8,6 +8,7 @@ import { ROUTES } from '../../data/routes';
 import { getPostLoginRoute } from '../../utils/postLoginRoute';
 import { isStaffUser } from '../../utils/roles';
 import { isRequired, isEmail } from '../../utils/validators';
+import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
 import { AuthSakuraLayer } from '../../components/auth/AuthSakuraLayer';
 import { AuthHeroAvatars } from '../../components/auth/AuthHeroAvatars';
 import { useGoogleIdentityButton } from '../../hooks/useGoogleIdentityButton';
@@ -146,7 +147,7 @@ export default function Login() {
       const data = await login({ email, password });
       routeAfterAuth(data);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Đăng nhập thất bại.');
+      setError(getErrorMessageForUser(err, 'Đăng nhập thất bại.'));
     } finally {
       setLoading(false);
     }
@@ -161,7 +162,7 @@ export default function Login() {
         const data = await loginWithGoogle({ idToken: credential });
         routeAfterAuth(data);
       } catch (err) {
-        setError(err.response?.data?.message || err.message || 'Đăng nhập Google thất bại.');
+        setError(getErrorMessageForUser(err, 'Đăng nhập Google thất bại.'));
       } finally {
         setLoading(false);
       }
@@ -186,15 +187,15 @@ export default function Login() {
         <Motion.section className="auth-left auth-left--photo auth-left--v3">
           <Motion.div className="auth-left__hero-copy" variants={loginHeroGlass} initial="hidden" animate="visible">
             <h2 className="auth-left__title">
-              Master the Art of <span className="auth-left__accent">Japanese</span>
+              Chinh phục nghệ thuật <span className="auth-left__accent">tiếng Nhật</span>
             </h2>
             <p className="auth-left__desc">
-              Join thousands of learners on a journey through grammar, kanji, and culture — with care on YumeGo-ji.
+              Cùng hàng nghìn học viên ôn ngữ pháp, kanji và văn hóa — YumeGo-ji đồng hành cùng bạn.
             </p>
             <div className="auth-left__hero-footer" aria-hidden="true">
               <AuthHeroAvatars />
               <div>
-                Joined by <strong>12,000+</strong> learners
+                Đã có hơn <strong>12.000</strong> học viên đồng hành
               </div>
             </div>
           </Motion.div>
@@ -207,10 +208,10 @@ export default function Login() {
           </Motion.div>
 
           <Motion.h1 className="auth-right__title" variants={loginStaggerItem}>
-            Welcome back
+            Chào mừng trở lại
           </Motion.h1>
           <Motion.p className="auth-right__subtitle" variants={loginStaggerItem}>
-            Please enter your details to sign in.
+            Nhập email và mật khẩu để đăng nhập.
           </Motion.p>
 
           {message && (
@@ -233,7 +234,7 @@ export default function Login() {
                 transition={{ type: 'spring', stiffness: 420, damping: 28 }}
               >
                 <label htmlFor="login-email" className="input-label">
-                  Email address
+                  Email
                 </label>
                 <div className="auth-field-wrap">
                   <span className="auth-field-icon">
@@ -245,7 +246,7 @@ export default function Login() {
                     className="auth-field-input"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder="ban@email.com"
                     autoComplete="email"
                     disabled={loading}
                   />
@@ -260,10 +261,10 @@ export default function Login() {
               >
                 <div className="auth-row">
                   <label htmlFor="login-password" className="input-label">
-                    Password
+                    Mật khẩu
                   </label>
                   <Link className="auth-link" to={ROUTES.RESET_PASSWORD}>
-                    Forgot password?
+                    Quên mật khẩu?
                   </Link>
                 </div>
                 <div className="auth-field-wrap auth-field-wrap--password">
@@ -306,7 +307,7 @@ export default function Login() {
                   whileHover={{ scale: loading ? 1 : 1.02 }}
                   whileTap={{ scale: loading ? 1 : 0.98 }}
                 >
-                  {loading ? 'Đang xử lý...' : 'Sign In to Learning'}
+                  {loading ? 'Đang xử lý...' : 'Đăng nhập'}
                 </Motion.button>
               </Motion.div>
             </Motion.div>
@@ -345,7 +346,7 @@ export default function Login() {
           </Motion.div>
 
           <Motion.p className="auth-footer" variants={loginStaggerItem}>
-            Don&apos;t have an account? <Link to={ROUTES.REGISTER}>Create an account</Link>
+            Chưa có tài khoản? <Link to={ROUTES.REGISTER}>Đăng ký</Link>
           </Motion.p>
           <Motion.div variants={loginStaggerItem}>
             <Link to={ROUTES.HOME} className="auth-back">
@@ -353,7 +354,7 @@ export default function Login() {
             </Link>
           </Motion.div>
 
-          <p className="auth-login-tagline">Experience the harmony of language</p>
+          <p className="auth-login-tagline">Cảm nhận sự hài hòa của ngôn ngữ</p>
         </Motion.section>
       </Motion.div>
     </div>

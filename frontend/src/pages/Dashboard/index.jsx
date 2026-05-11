@@ -200,9 +200,9 @@ export default function Dashboard() {
     { title: 'Thành tích', sub: 'Hệ thống huy hiệu và EXP', to: `${ROUTES.PLAY}/achievements`, icon: '🏆' },
   ];
   const chatRooms = [
-    { name: 'General Chat', sub: 'Phòng công cộng cho mọi học viên' },
-    { name: `${levelCode} Study Group`, sub: `Phòng học theo cấp độ ${levelCode}` },
-    { name: 'Japanese Culture', sub: 'Chia sẻ văn hóa và tips học' },
+    { name: 'Chat chung', sub: 'Phòng công cộng cho mọi học viên' },
+    { name: `Nhóm học ${levelCode}`, sub: `Phòng học theo cấp độ ${levelCode}` },
+    { name: 'Văn hoá Nhật', sub: 'Chia sẻ văn hóa và mẹo học' },
   ];
   const topRows = levelRows.slice(0, 2);
 
@@ -218,19 +218,21 @@ export default function Dashboard() {
         <Motion.section className="yume-mock-hero" variants={dashItem}>
           <div className="yume-mock-hero__left">
             <div className="yume-mock-tags">
-              {isPremium ? <span className="yume-mock-tag">Premium Member</span> : null}
-              <span className="yume-mock-tag">Rank: {rankInfo.currentLabel}</span>
+              {isPremium ? <span className="yume-mock-tag">Thành viên Premium</span> : null}
+              <span className="yume-mock-tag">Hạng: {rankInfo.currentLabel}</span>
             </div>
             <h1 className="yume-mock-greet">
               Xin chào, <span>{displayName}!</span>
             </h1>
-            <p className="yume-mock-sub">Ready to master your Kanji today? Hành trình học của bạn đang tiến triển tốt.</p>
+            <p className="yume-mock-sub">
+              Sẵn sàng chinh phục Kanji hôm nay? Hành trình học của bạn đang tiến triển tốt.
+            </p>
           </div>
           <aside className="yume-mock-rank-card">
             <div className="yume-mock-rank-card__title">Rank hiện tại</div>
-            <div className="yume-mock-rank-card__name">{rankInfo.currentLabel} Tier</div>
+            <div className="yume-mock-rank-card__name">{rankInfo.currentLabel} — bậc hiện tại</div>
             <div className="yume-mock-rank-card__line">
-              <span>Progress to next</span>
+              <span>Tiến độ lên mốc tiếp</span>
               <strong>{rankInfo.barPct}%</strong>
             </div>
             <div className="yume-mock-rank-card__track" role="progressbar" aria-valuenow={rankInfo.barPct} aria-valuemin={0} aria-valuemax={100}>
@@ -241,19 +243,19 @@ export default function Dashboard() {
 
         <Motion.div className="yume-mock-stats" variants={dashStatGrid}>
           <Motion.article className="yume-mock-stat" variants={dashItem}>
-            <div className="yume-mock-stat__label">Current Level</div>
-            <div className="yume-mock-stat__value">Level {levelNumber}</div>
+            <div className="yume-mock-stat__label">Cấp hiện tại</div>
+            <div className="yume-mock-stat__value">Cấp {levelNumber}</div>
           </Motion.article>
           <Motion.article className="yume-mock-stat" variants={dashItem}>
-            <div className="yume-mock-stat__label">Daily Streak</div>
-            <div className="yume-mock-stat__value">{summaryLoading ? '…' : `${formatIntVi(streakDays)} Days`}</div>
+            <div className="yume-mock-stat__label">Chuỗi ngày học</div>
+            <div className="yume-mock-stat__value">{summaryLoading ? '…' : `${formatIntVi(streakDays)} ngày`}</div>
           </Motion.article>
           <Motion.article className="yume-mock-stat" variants={dashItem}>
-            <div className="yume-mock-stat__label">Accumulated XP</div>
+            <div className="yume-mock-stat__label">Tổng XP</div>
             <div className="yume-mock-stat__value">{summaryLoading ? '…' : `${formatIntVi(exp)} XP`}</div>
           </Motion.article>
           <Motion.article className="yume-mock-stat" variants={dashItem}>
-            <div className="yume-mock-stat__label">Completed Lessons</div>
+            <div className="yume-mock-stat__label">Bài học đã hoàn thành</div>
             <div className="yume-mock-stat__value">{summaryLoading ? '…' : formatIntVi(completedLessons)}</div>
           </Motion.article>
         </Motion.div>
@@ -267,7 +269,7 @@ export default function Dashboard() {
         <Motion.div className="yume-mock-main" variants={dashCol}>
           <Motion.div className="yume-mock-main__left" variants={dashCol}>
             <Motion.section className="yume-mock-panel" variants={dashItem}>
-              <div className="yume-mock-panel__title">Quick Actions</div>
+              <div className="yume-mock-panel__title">Thao tác nhanh</div>
               <div className="yume-mock-actions">
                 {quickActions.map((a) => (
                   <Link key={a.title} to={a.to} className="yume-mock-action">
@@ -293,8 +295,8 @@ export default function Dashboard() {
 
             <Motion.section className="yume-mock-panel" variants={dashItem}>
               <div className="yume-mock-panel__title yume-mock-panel__title--row">
-                <span>JLPT Path</span>
-                <Link to={ROUTES.LEARN}>View Curriculum →</Link>
+                <span>Lộ trình JLPT</span>
+                <Link to={ROUTES.LEARN}>Xem chương trình →</Link>
               </div>
               <div className="yume-mock-jlpt-list">
                 {summaryLoading ? (
@@ -314,13 +316,13 @@ export default function Dashboard() {
                         <div className="yume-mock-jlpt__body">
                           <div className="yume-mock-jlpt__head">
                             <strong>{name}</strong>
-                            <span>{pct}% Mastery</span>
+                            <span>{pct}% hoàn thành</span>
                           </div>
                           <div className="yume-mock-jlpt__track">
                             <span style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
                           </div>
                           <small>
-                            {done}/{total} modules completed
+                            {done}/{total} bài đã xong
                           </small>
                         </div>
                       </div>
@@ -333,7 +335,7 @@ export default function Dashboard() {
 
           <Motion.div className="yume-mock-main__right" variants={dashCol}>
             <Motion.section className="yume-mock-panel" variants={dashItem}>
-              <div className="yume-mock-panel__title">Chat Rooms</div>
+              <div className="yume-mock-panel__title">Phòng trò chuyện</div>
               <div className="yume-mock-rooms">
                 {chatRooms.map((r) => (
                   <Link key={r.name} to={ROUTES.CHAT} className="yume-mock-room">
@@ -346,19 +348,21 @@ export default function Dashboard() {
                 ))}
               </div>
               <Link to={ROUTES.CHAT} className="yume-mock-room-all">
-                Browse All Rooms
+                Xem tất cả phòng
               </Link>
             </Motion.section>
 
             <Motion.section className="yume-mock-goal" variants={dashItem}>
-              <div className="yume-mock-goal__title">Daily Goal</div>
-              <p>You are {formatIntVi(xpToNext)} XP away from your next rank milestone.</p>
+              <div className="yume-mock-goal__title">Mục tiêu hôm nay</div>
+              <p>
+                Còn khoảng {formatIntVi(xpToNext)} XP nữa để đạt mốc hạng tiếp theo.
+              </p>
               <div className="yume-mock-goal__bottom">
                 <div className="yume-mock-goal__ring">
                   <span>{dailyGoalPct}%</span>
                 </div>
                 <Link to={ROUTES.LEARN} className="yume-mock-goal__btn">
-                  Study Now
+                  Học ngay
                 </Link>
               </div>
             </Motion.section>

@@ -93,7 +93,7 @@ export default function PlayLeaderboard() {
           <span>Game (slug, tuỳ chọn)</span>
           <input
             type="text"
-            placeholder="hiragana-match"
+            placeholder="vd: hiragana-match"
             value={gameSlug}
             onChange={(e) => setGameSlug(e.target.value)}
           />

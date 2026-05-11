@@ -994,6 +994,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
           </div>
         </div>
         </div>
+        <div className="moji-chat__sidebar-unified__shortcuts-stack">
         <div className="moji-chat__primary-scroll moji-chat__primary-scroll--unified">
           <ul className="moji-chat__primary-list">
             <li>
@@ -1069,6 +1070,7 @@ function YumeChatLayoutInner({ children, selectedRoomId = null, variant = 'full'
           <button type="button" className="moji-chat__primary-new-link" onClick={handleCreateChat}>
             + Tin nhắn mới
           </button>
+        </div>
         </div>
 
         <div className="moji-chat__sidebar-unified__grow">

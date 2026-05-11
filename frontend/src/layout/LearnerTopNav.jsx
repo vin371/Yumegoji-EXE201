@@ -123,7 +123,7 @@ export function LearnerTopNav() {
         <div className="learner-nav__end-cluster">
           <nav
             className="learner-nav__links"
-            aria-label={staffNav ? 'Trang nghiệp vụ và Chat' : 'Điều hướng chính'}
+            aria-label={staffNav ? 'Trang nghiệp vụ và trò chuyện' : 'Điều hướng chính'}
           >
           {staffNav ? (
             <>
@@ -132,12 +132,12 @@ export function LearnerTopNav() {
                 end
                 className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}
               >
-                {isAdminUser ? 'Dashboard' : 'Điều hành'}
+                {isAdminUser ? 'Bảng điều khiển' : 'Điều hành'}
               </NavLink>
               <NavLink
                 to={ROUTES.CHAT}
                 className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}
-                aria-label={navChatUnread > 0 ? `Chat, ${navChatUnread} tin chưa đọc` : undefined}
+                aria-label={navChatUnread > 0 ? `Trò chuyện, ${navChatUnread} tin chưa đọc` : undefined}
               >
                 <span className="learner-nav__icon-badge-wrap">
                   <IconChat />
@@ -147,7 +147,7 @@ export function LearnerTopNav() {
                     </span>
                   ) : null}
                 </span>
-                Chat
+                Trò chuyện
               </NavLink>
             </>
           ) : (
@@ -163,7 +163,7 @@ export function LearnerTopNav() {
               <NavLink
                 to={ROUTES.CHAT}
                 className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}
-                aria-label={navChatUnread > 0 ? `Chat, ${navChatUnread} tin chưa đọc` : undefined}
+                aria-label={navChatUnread > 0 ? `Trò chuyện, ${navChatUnread} tin chưa đọc` : undefined}
               >
                 <span className="learner-nav__icon-badge-wrap">
                   <IconChat />
@@ -173,13 +173,13 @@ export function LearnerTopNav() {
                     </span>
                   ) : null}
                 </span>
-                Chat
+                Trò chuyện
               </NavLink>
               <NavLink
                 to={ROUTES.UPGRADE}
                 className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}
               >
-                🛒 Upgrade
+                🛒 Nâng cấp
               </NavLink>
             </>
           )}
@@ -261,7 +261,7 @@ export function LearnerTopNav() {
                       role="menuitem"
                       onClick={() => setMenuOpen(false)}
                     >
-                      Dashboard
+                      Bảng điều khiển
                     </Link>
                     <Link
                       to={ROUTES.ACCOUNT}
@@ -269,7 +269,7 @@ export function LearnerTopNav() {
                       role="menuitem"
                       onClick={() => setMenuOpen(false)}
                     >
-                      Account
+                      Tài khoản
                     </Link>
                     <button
                       type="button"
