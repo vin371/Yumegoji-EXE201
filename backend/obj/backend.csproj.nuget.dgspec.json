@@ -1,31 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "E:\\EXE201\\EXE201\\backend\\backend.csproj": {}
+    "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\backend.csproj": {}
   },
   "projects": {
-    "E:\\EXE201\\EXE201\\backend\\backend.csproj": {
+    "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\EXE201\\EXE201\\backend\\backend.csproj",
+        "projectUniqueName": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\backend.csproj",
         "projectName": "backend",
-        "projectPath": "E:\\EXE201\\EXE201\\backend\\backend.csproj",
-        "packagesPath": "C:\\Users\\VINH\\.nuget\\packages\\",
-        "outputPath": "E:\\EXE201\\EXE201\\backend\\obj\\",
+        "projectPath": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\backend.csproj",
+        "packagesPath": "C:\\Users\\gmt\\.nuget\\packages\\",
+        "outputPath": "d:\\semester 8\\EXE2\\Yumegoji-EXE201\\backend\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\VINH\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\gmt\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -43,8 +37,7 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        },
-        "SdkAnalysisLevel": "9.0.300"
+        }
       },
       "frameworks": {
         "net8.0": {
@@ -116,7 +109,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.418/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

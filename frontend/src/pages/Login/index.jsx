@@ -1,5 +1,5 @@
 /* eslint-env browser */
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import * as FM from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
@@ -10,6 +10,7 @@ import { isStaffUser } from '../../utils/roles';
 import { isRequired, isEmail } from '../../utils/validators';
 import { AuthSakuraLayer } from '../../components/auth/AuthSakuraLayer';
 import { AuthHeroAvatars } from '../../components/auth/AuthHeroAvatars';
+import { useGoogleIdentityButton } from '../../hooks/useGoogleIdentityButton';
 import {
   loginShellVariants,
   loginStaggerParent,
@@ -19,7 +20,6 @@ import {
 import yumeLogo from '../../assets/yume-logo.png';
 
 const Motion = FM.motion;
-const VITE_GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 function IconEnvelope() {
   return (
@@ -109,7 +109,6 @@ export default function Login() {
   const location = useLocation();
   const from = location.state?.from?.pathname || ROUTES.DASHBOARD;
   const message = location.state?.message;
-  const googleBtnRef = useRef(null);
 
   useEffect(() => {
     if (message) setError('');
@@ -170,50 +169,9 @@ export default function Login() {
     [loginWithGoogle, routeAfterAuth],
   );
 
-  useEffect(() => {
-    if (!VITE_GOOGLE_CLIENT_ID) return undefined;
-    const mountEl = googleBtnRef.current;
-    if (!mountEl) return undefined;
-
-    let cancelled = false;
-    let intervalId;
-
-    const tryMount = () => {
-      const g = globalThis.google;
-      if (cancelled || !g?.accounts?.id) return false;
-      mountEl.replaceChildren();
-      g.accounts.id.initialize({
-        client_id: VITE_GOOGLE_CLIENT_ID,
-        callback: (res) => {
-          void onGoogleCredential(res?.credential);
-        },
-      });
-      const wrap = mountEl.closest('.auth-google-pill-wrap');
-      const w = Math.min(280, wrap?.clientWidth || mountEl.parentElement?.clientWidth || 280);
-      g.accounts.id.renderButton(mountEl, {
-        type: 'standard',
-        theme: 'outline',
-        size: 'large',
-        shape: 'pill',
-        text: 'signin_with',
-        width: w,
-        locale: 'vi',
-      });
-      return true;
-    };
-
-    if (!tryMount()) {
-      intervalId = globalThis.setInterval(() => {
-        if (tryMount() && intervalId != null) globalThis.clearInterval(intervalId);
-      }, 120);
-    }
-
-    return () => {
-      cancelled = true;
-      if (intervalId != null) globalThis.clearInterval(intervalId);
-      mountEl.replaceChildren();
-    };
-  }, [onGoogleCredential]);
+  const { mountRef: googleBtnRef, clientIdConfigured } = useGoogleIdentityButton(onGoogleCredential, {
+    text: 'signin_with',
+  });
 
   return (
     <div className="auth-page auth-page--animated-login">
@@ -362,7 +320,7 @@ export default function Login() {
           >
             <p className="auth-google-only__label">Đăng nhập với</p>
             <div className="auth-google-pill-wrap">
-              {VITE_GOOGLE_CLIENT_ID ? (
+              {clientIdConfigured ? (
                 <div ref={googleBtnRef} className="auth-google-mount auth-google-mount--pill" />
               ) : (
                 <Motion.button
