@@ -550,6 +550,7 @@
 
 .auth-social--register {
   margin-bottom: 0.35rem;
+  grid-template-columns: 1fr;
 }
 
 .auth-field-input::placeholder {

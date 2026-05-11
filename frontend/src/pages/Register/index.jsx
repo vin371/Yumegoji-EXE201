@@ -229,15 +229,6 @@ export default function Register() {
                 </Motion.button>
               )}
             </div>
-            <Motion.button
-              type="button"
-              className="auth-social__btn"
-              disabled
-              title="Sắp có"
-              whileHover={{ y: 0 }}
-            >
-              <span className="auth-social__dot" aria-hidden="true" /> Facebook
-            </Motion.button>
           </Motion.div>
 
           <Motion.div className="auth-divider" variants={loginStaggerItem}>
