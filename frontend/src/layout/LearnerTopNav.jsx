@@ -120,10 +120,11 @@ export function LearnerTopNav() {
           <span className="learner-nav__brand-title">YumeGo-ji</span>
         </Link>
 
-        <nav
-          className="learner-nav__links"
-          aria-label={staffNav ? 'Trang nghiệp vụ và Chat' : 'Điều hướng chính'}
-        >
+        <div className="learner-nav__end-cluster">
+          <nav
+            className="learner-nav__links"
+            aria-label={staffNav ? 'Trang nghiệp vụ và Chat' : 'Điều hướng chính'}
+          >
           {staffNav ? (
             <>
               <NavLink
@@ -184,7 +185,7 @@ export function LearnerTopNav() {
           )}
         </nav>
 
-        <div className="learner-nav__right">
+          <div className="learner-nav__right">
           <button
             type="button"
             className="learner-nav__theme"
@@ -229,7 +230,30 @@ export function LearnerTopNav() {
             </button>
             {menuOpen && (
               <div className="learner-nav__dropdown" role="menu">
-                {!staffNav ? (
+                {staffNav ? (
+                  <>
+                    <Link
+                      to={ROUTES.ACCOUNT}
+                      className="learner-nav__dropdown-item"
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Tài khoản
+                    </Link>
+                    <button
+                      type="button"
+                      className="learner-nav__dropdown-item learner-nav__dropdown-item--danger"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        logout();
+                        navigate(ROUTES.LOGIN);
+                      }}
+                    >
+                      Đăng xuất
+                    </button>
+                  </>
+                ) : (
                   <>
                     <Link
                       to={ROUTES.DASHBOARD}
@@ -247,23 +271,24 @@ export function LearnerTopNav() {
                     >
                       Account
                     </Link>
+                    <button
+                      type="button"
+                      className="learner-nav__dropdown-item learner-nav__dropdown-item--danger"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        logout();
+                        navigate(ROUTES.LOGIN);
+                      }}
+                    >
+                      Đăng xuất
+                    </button>
                   </>
-                ) : null}
-                <button
-                  type="button"
-                  className="learner-nav__dropdown-item learner-nav__dropdown-item--danger"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    logout();
-                    navigate(ROUTES.LOGIN);
-                  }}
-                >
-                  Đăng xuất
-                </button>
+                )}
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
     </header>
