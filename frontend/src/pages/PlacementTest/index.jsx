@@ -240,7 +240,7 @@ export default function PlacementTest() {
         <div className="level-up-toast" role="status">
           <p>
             Bạn làm đúng {result.correctCount}/{result.totalCount} câu. Gợi ý trình độ: <strong>JLPT {result.levelLabel}</strong>
-            . Đang chuyển về Dashboard…
+            . Đang chuyển về bảng điều khiển…
           </p>
         </div>
       ) : null}

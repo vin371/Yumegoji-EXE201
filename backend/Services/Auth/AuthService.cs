@@ -69,8 +69,7 @@ public class AuthService : IAuthService
         await _db.SaveChangesAsync();
 
         var token = GenerateJwtToken(user);
-        var needsPlacement = !ShouldSkipPlacementTest(user) &&
-                               !await _db.PlacementResults.AnyAsync(r => r.UserId == user.Id);
+        var needsPlacement = await ComputeNeedsPlacementTestAsync(user);
 
         return new AuthResponse
         {
@@ -300,8 +299,7 @@ public class AuthService : IAuthService
         await _db.SaveChangesAsync();
 
         var token = GenerateJwtToken(user);
-        var needsPlacement = !ShouldSkipPlacementTest(user) &&
-                             !await _db.PlacementResults.AnyAsync(r => r.UserId == user.Id);
+        var needsPlacement = await ComputeNeedsPlacementTestAsync(user);
 
         return new AuthResponse
         {
@@ -309,6 +307,19 @@ public class AuthService : IAuthService
             User = MapToDto(user),
             NeedsPlacementTest = needsPlacement
         };
+    }
+
+    /// <summary>
+    /// Trả về <c>true</c> khi học viên phải làm placement 40 câu (chưa có kết quả trong DB).
+    /// Trả về <c>false</c> cho admin/moderator, hoặc khi admin đã gán <see cref="User.LevelId"/>.
+    /// </summary>
+    private async Task<bool> ComputeNeedsPlacementTestAsync(User user)
+    {
+        if (ShouldSkipPlacementTest(user))
+            return false;
+        if (user.LevelId.HasValue)
+            return false;
+        return !await _db.PlacementResults.AnyAsync(r => r.UserId == user.Id);
     }
 
     private async Task<User> CreateUserFromGoogleAsync(string email, string? displayName, string googleSub)

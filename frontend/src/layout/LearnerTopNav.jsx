@@ -120,10 +120,11 @@ export function LearnerTopNav() {
           <span className="learner-nav__brand-title">YumeGo-ji</span>
         </Link>
 
-        <nav
-          className="learner-nav__links"
-          aria-label={staffNav ? 'Trang nghiệp vụ và Chat' : 'Điều hướng chính'}
-        >
+        <div className="learner-nav__end-cluster">
+          <nav
+            className="learner-nav__links"
+            aria-label={staffNav ? 'Trang nghiệp vụ và trò chuyện' : 'Điều hướng chính'}
+          >
           {staffNav ? (
             <>
               <NavLink
@@ -131,12 +132,12 @@ export function LearnerTopNav() {
                 end
                 className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}
               >
-                {isAdminUser ? 'Dashboard' : 'Điều hành'}
+                {isAdminUser ? 'Bảng điều khiển' : 'Điều hành'}
               </NavLink>
               <NavLink
                 to={ROUTES.CHAT}
                 className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}
-                aria-label={navChatUnread > 0 ? `Chat, ${navChatUnread} tin chưa đọc` : undefined}
+                aria-label={navChatUnread > 0 ? `Trò chuyện, ${navChatUnread} tin chưa đọc` : undefined}
               >
                 <span className="learner-nav__icon-badge-wrap">
                   <IconChat />
@@ -146,7 +147,7 @@ export function LearnerTopNav() {
                     </span>
                   ) : null}
                 </span>
-                Chat
+                Trò chuyện
               </NavLink>
             </>
           ) : (
@@ -162,7 +163,7 @@ export function LearnerTopNav() {
               <NavLink
                 to={ROUTES.CHAT}
                 className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}
-                aria-label={navChatUnread > 0 ? `Chat, ${navChatUnread} tin chưa đọc` : undefined}
+                aria-label={navChatUnread > 0 ? `Trò chuyện, ${navChatUnread} tin chưa đọc` : undefined}
               >
                 <span className="learner-nav__icon-badge-wrap">
                   <IconChat />
@@ -172,19 +173,19 @@ export function LearnerTopNav() {
                     </span>
                   ) : null}
                 </span>
-                Chat
+                Trò chuyện
               </NavLink>
               <NavLink
                 to={ROUTES.UPGRADE}
                 className={({ isActive }) => `learner-nav__link ${isActive ? 'learner-nav__link--active' : ''}`}
               >
-                🛒 Upgrade
+                🛒 Nâng cấp
               </NavLink>
             </>
           )}
         </nav>
 
-        <div className="learner-nav__right">
+          <div className="learner-nav__right">
           <button
             type="button"
             className="learner-nav__theme"
@@ -229,7 +230,30 @@ export function LearnerTopNav() {
             </button>
             {menuOpen && (
               <div className="learner-nav__dropdown" role="menu">
-                {!staffNav ? (
+                {staffNav ? (
+                  <>
+                    <Link
+                      to={ROUTES.ACCOUNT}
+                      className="learner-nav__dropdown-item"
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Tài khoản
+                    </Link>
+                    <button
+                      type="button"
+                      className="learner-nav__dropdown-item learner-nav__dropdown-item--danger"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        logout();
+                        navigate(ROUTES.LOGIN);
+                      }}
+                    >
+                      Đăng xuất
+                    </button>
+                  </>
+                ) : (
                   <>
                     <Link
                       to={ROUTES.DASHBOARD}
@@ -237,7 +261,7 @@ export function LearnerTopNav() {
                       role="menuitem"
                       onClick={() => setMenuOpen(false)}
                     >
-                      Dashboard
+                      Bảng điều khiển
                     </Link>
                     <Link
                       to={ROUTES.ACCOUNT}
@@ -245,25 +269,26 @@ export function LearnerTopNav() {
                       role="menuitem"
                       onClick={() => setMenuOpen(false)}
                     >
-                      Account
+                      Tài khoản
                     </Link>
+                    <button
+                      type="button"
+                      className="learner-nav__dropdown-item learner-nav__dropdown-item--danger"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        logout();
+                        navigate(ROUTES.LOGIN);
+                      }}
+                    >
+                      Đăng xuất
+                    </button>
                   </>
-                ) : null}
-                <button
-                  type="button"
-                  className="learner-nav__dropdown-item learner-nav__dropdown-item--danger"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    logout();
-                    navigate(ROUTES.LOGIN);
-                  }}
-                >
-                  Đăng xuất
-                </button>
+                )}
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
     </header>

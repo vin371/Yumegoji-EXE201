@@ -145,7 +145,7 @@ export default function Homepage() {
         description:
           'Tài khoản quản trị / điều hành: vào bảng điều khiển để xem người dùng, doanh thu và cấu hình — không dùng lộ trình học viên tại đây.',
         primaryCta: 'Vào bảng quản trị',
-        secondaryCta: 'Mở Chat',
+        secondaryCta: 'Mở trò chuyện',
       };
     }
     return {
@@ -156,7 +156,7 @@ export default function Homepage() {
       description:
         'Vào khu học tập để làm bài, ôn Kanji và xem tiến độ — nội dung bên dưới vẫn giúp bạn nhớ vì sao YumeGo-ji khác biệt.',
       primaryCta: 'Tiếp tục học',
-      secondaryCta: 'Vào Dashboard',
+      secondaryCta: 'Vào bảng điều khiển',
     };
   }, [isAuthenticated, memberFirstName, user]);
 

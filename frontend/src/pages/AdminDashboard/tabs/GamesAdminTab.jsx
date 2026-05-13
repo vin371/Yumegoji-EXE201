@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { createAdminGame, deleteAdminGame, fetchAdminGames } from '../../../services/gameService';
+import { getErrorMessageForUser } from '../../../utils/apiErrorMessage';
 
 const Motion = motion;
 
@@ -90,7 +91,7 @@ export function GamesAdminTab() {
       const list = await fetchAdminGames();
       setRows(Array.isArray(list) ? list.map(normGame) : []);
     } catch (e) {
-      setErr(e?.response?.data?.message || e?.message || 'Không tải được danh sách game.');
+      setErr(getErrorMessageForUser(e, 'Không tải được danh sách game.'));
       setRows([]);
     } finally {
       setLoading(false);
@@ -121,7 +122,7 @@ export function GamesAdminTab() {
       setForm({ slug: '', name: '', description: '', skillType: '', maxHearts: 3, sortOrder: 0 });
       await loadRows();
     } catch (e) {
-      setErr(e?.response?.data?.message || e?.message || 'Không thêm được game.');
+      setErr(getErrorMessageForUser(e, 'Không thêm được game.'));
     }
   }
 
@@ -132,7 +133,7 @@ export function GamesAdminTab() {
       await deleteAdminGame(id);
       await loadRows();
     } catch (e) {
-      setErr(e?.response?.data?.message || e?.message || 'Không xóa được game.');
+      setErr(getErrorMessageForUser(e, 'Không xóa được game.'));
     }
   }
 
@@ -149,23 +150,23 @@ export function GamesAdminTab() {
           <h3 className="admin-dash__subcard-title">Thêm game mới</h3>
           <div className="admin-dash__form-grid">
             <label>
-              Slug
+              Slug (mã định danh)
               <input value={form.slug} onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))} placeholder="vd: kana-race" />
             </label>
             <label>
               Tên game
-              <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="vd: Kana Race" />
+              <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="vd: Đua kana" />
             </label>
             <label>
-              Skill type
-              <input value={form.skillType} onChange={(e) => setForm((p) => ({ ...p, skillType: e.target.value }))} placeholder="vocabulary / grammar..." />
+              Loại kỹ năng
+              <input value={form.skillType} onChange={(e) => setForm((p) => ({ ...p, skillType: e.target.value }))} placeholder="từ vựng / ngữ pháp…" />
             </label>
             <label>
-              Max hearts
+              Tối đa mạng (tim)
               <input type="number" min={1} max={10} value={form.maxHearts} onChange={(e) => setForm((p) => ({ ...p, maxHearts: Number(e.target.value || 3) }))} />
             </label>
             <label>
-              Sort order
+              Thứ tự hiển thị
               <input type="number" value={form.sortOrder} onChange={(e) => setForm((p) => ({ ...p, sortOrder: Number(e.target.value || 0) }))} />
             </label>
             <label>
@@ -198,10 +199,10 @@ export function GamesAdminTab() {
                 <tr>
                   <th>Tên</th>
                   <th>Slug</th>
-                  <th>Skill</th>
+                  <th>Kỹ năng</th>
                   <th>PvP</th>
                   <th>Boss</th>
-                  <th>Hearts</th>
+                  <th>Mạng</th>
                   <th>Sắp xếp</th>
                   <th>Cấp độ</th>
                   <th>Mô tả</th>

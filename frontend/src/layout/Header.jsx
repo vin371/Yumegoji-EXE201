@@ -130,7 +130,7 @@ export function Header() {
                     role="menuitem"
                     onClick={() => setAccountOpen(false)}
                   >
-                    Dashboard
+                    Bảng điều khiển
                   </Link>
                   <Link
                     to={ROUTES.CHAT}
@@ -138,7 +138,7 @@ export function Header() {
                     role="menuitem"
                     onClick={() => setAccountOpen(false)}
                   >
-                    Chat
+                    Trò chuyện
                   </Link>
                   <Link
                     to={ROUTES.ACCOUNT}
@@ -146,7 +146,7 @@ export function Header() {
                     role="menuitem"
                     onClick={() => setAccountOpen(false)}
                   >
-                    Account
+                    Tài khoản
                   </Link>
                   <button
                     type="button"
@@ -196,9 +196,9 @@ export function Header() {
         <Link to={ROUTES.HOME}>Trang chủ</Link>
         {isAuthenticated ? (
           <>
-            <Link to={ROUTES.CHAT}>Chat</Link>
-            <Link to={ROUTES.DASHBOARD}>Dashboard</Link>
-            <Link to={ROUTES.ACCOUNT}>Account</Link>
+            <Link to={ROUTES.CHAT}>Trò chuyện</Link>
+            <Link to={ROUTES.DASHBOARD}>Bảng điều khiển</Link>
+            <Link to={ROUTES.ACCOUNT}>Tài khoản</Link>
             <button type="button" onClick={logout} className="layout-header__btn">
               Đăng xuất
             </button>

@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import { AuthHeroAvatars } from '../../components/auth/AuthHeroAvatars';
 import { ROUTES } from '../../data/routes';
-import { isRequired, minLength, isEmail } from '../../utils/validators';
+import { getErrorMessageForUser } from '../../utils/apiErrorMessage';
 
 /** Lấy token từ URL đầy đủ do API dev trả (vd http://localhost:8080/reset-password?token=…). */
 function extractTokenFromResetUrl(resetUrl) {
@@ -89,7 +89,7 @@ export default function ResetPassword() {
         1500,
       );
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Đặt lại mật khẩu thất bại.');
+      setError(getErrorMessageForUser(err, 'Đặt lại mật khẩu thất bại.'));
     } finally {
       setLoading(false);
     }
@@ -104,7 +104,7 @@ export default function ResetPassword() {
           <div className="auth-left__mini" aria-hidden="true">
             <AuthHeroAvatars />
             <div>
-              Joined by <strong>12,000+</strong> learners
+              Đã có hơn <strong>12.000</strong> học viên đồng hành
             </div>
           </div>
         </section>
@@ -132,7 +132,7 @@ export default function ResetPassword() {
                     className="input-field"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder="ban@email.com"
                     autoComplete="email"
                     disabled={loading}
                   />

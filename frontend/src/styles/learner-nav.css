@@ -3,6 +3,10 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: clip;
   background: color-mix(in srgb, var(--bg) 94%, #ffffff 6%);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
@@ -10,13 +14,16 @@
 }
 
 .learner-nav__inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0.65rem 1.25rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0.65rem clamp(0.75rem, 3vw, 1.75rem);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  box-sizing: border-box;
 }
 
 .learner-nav__brand {
@@ -25,6 +32,43 @@
   gap: 0.5rem;
   text-decoration: none;
   color: inherit;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+/* Logo trái — cụm nút phải được phép co để không tràn viewport (scroll ngang) */
+.learner-nav__end-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  justify-content: flex-end;
+}
+
+.learner-nav__links {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: visible;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.learner-nav__links::-webkit-scrollbar {
+  height: 4px;
+}
+
+.learner-nav__links::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 4px;
 }
 
 .learner-nav__brand-logo {
@@ -51,19 +95,11 @@ html[data-theme='dark'] .learner-nav__brand-title {
   }
 }
 
-.learner-nav__links {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex: 1;
-  justify-content: center;
-}
-
 .learner-nav__link {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.5rem 1rem;
+  padding: 0.45rem clamp(0.45rem, 1.8vw, 1rem);
   border-radius: 10px;
   text-decoration: none;
   font-weight: 600;
@@ -136,12 +172,15 @@ html[data-theme='dark'] .learner-nav__nav-badge {
 .learner-nav__right {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .learner-nav__theme {
   width: 38px;
   height: 38px;
+  flex-shrink: 0;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--bg);
@@ -151,6 +190,8 @@ html[data-theme='dark'] .learner-nav__nav-badge {
 
 .learner-nav__user-wrap {
   position: relative;
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 .learner-nav__user {
@@ -163,7 +204,8 @@ html[data-theme='dark'] .learner-nav__nav-badge {
   background: var(--bg);
   cursor: pointer;
   text-align: left;
-  max-width: 220px;
+  max-width: min(11.5rem, calc(100vw - 10rem));
+  box-sizing: border-box;
 }
 
 .learner-nav__user:hover {
@@ -300,10 +342,20 @@ html[data-theme='dark'] .learner-nav__user-role {
   .learner-nav__inner {
     flex-wrap: wrap;
   }
-  .learner-nav__links {
+  .learner-nav__end-cluster {
     order: 3;
     width: 100%;
-    justify-content: flex-start;
+    flex: none;
+    margin-left: 0;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    row-gap: 0.5rem;
+  }
+  .learner-nav__links {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-end;
     overflow-x: auto;
     padding-bottom: 0.25rem;
   }

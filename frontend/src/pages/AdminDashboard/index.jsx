@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { ROUTES } from '../../data/routes';
 import { SakuraRainLayer } from '../../components/effects/SakuraRainLayer';
 import { GamesAdminTab } from './tabs/GamesAdminTab';
 import { ModerationAdminTab } from './tabs/ModerationAdminTab';
@@ -28,8 +26,7 @@ const TABS = [
 ];
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [tab, setTab] = useState('overview');
   const reduceMotion = useReducedMotion();
 
@@ -82,21 +79,6 @@ export default function AdminDashboard() {
           <div className="admin-dash__status-pill admin-dash__status-pill--sidebar" title="Trạng thái hệ thống">
             <span className="admin-dash__pulse" aria-hidden />
             Hệ thống hoạt động bình thường
-          </div>
-          <div className="admin-dash__sidebar-links">
-            <button type="button" className="admin-dash__sidebar-muted-link" onClick={() => navigate(ROUTES.ACCOUNT)}>
-              Tài khoản
-            </button>
-            <button
-              type="button"
-              className="admin-dash__sidebar-muted-link"
-              onClick={() => {
-                logout();
-                navigate(ROUTES.LOGIN);
-              }}
-            >
-              Đăng xuất
-            </button>
           </div>
         </div>
       </aside>
